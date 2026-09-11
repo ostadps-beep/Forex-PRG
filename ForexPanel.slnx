@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ForexPanel.App/ForexPanel.App.csproj" />
+  <Project Path="ForexPanel.Core/ForexPanel.Core.csproj" />
+</Solution>

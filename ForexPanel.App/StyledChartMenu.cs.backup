@@ -1,0 +1,174 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
+namespace ForexPanel.App;
+
+internal sealed class StyledChartMenu : ScottPlot.IPlotMenu
+{
+    private readonly ScottPlot.WPF.WpfPlot chart;
+
+    public List<ScottPlot.ContextMenuItem> ContextMenuItems { get; } = new();
+
+    public StyledChartMenu(ScottPlot.WPF.WpfPlot chart)
+    {
+        this.chart = chart;
+        Reset();
+    }
+
+    public void Reset()
+    {
+        Clear();
+
+        Add("Save Image", SaveImage);
+        Add("Copy to Clipboard", CopyImageToClipboard);
+        Add("Autoscale", Autoscale);
+        Add("Open in New Window", OpenInNewWindow);
+    }
+
+    public void Clear() => ContextMenuItems.Clear();
+
+    public void Add(string label, Action<ScottPlot.Plot> action)
+    {
+        ContextMenuItems.Add(new ScottPlot.ContextMenuItem
+        {
+            Label = label,
+            OnInvoke = action
+        });
+    }
+
+    public void AddSeparator()
+    {
+        ContextMenuItems.Add(new ScottPlot.ContextMenuItem { IsSeparator = true });
+    }
+
+    public void ShowContextMenu(ScottPlot.Pixel pixel)
+    {
+        if (ContextMenuItems.Count == 0)
+            return;
+
+        var background = chart.TryFindResource("Menu.Static.Background") as Brush;
+        var foreground = chart.TryFindResource("Menu.Static.Foreground") as Brush;
+        var borderBrush = chart.TryFindResource("Menu.Static.Border") as Brush;
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = chart,
+            Placement = PlacementMode.MousePoint,
+            Padding = new Thickness(4),
+            MinWidth = 210,
+            BorderThickness = new Thickness(1),
+            SnapsToDevicePixels = true,
+            HasDropShadow = true
+        };
+
+        if (background != null)
+            menu.Background = background;
+        if (foreground != null)
+            menu.Foreground = foreground;
+        if (borderBrush != null)
+            menu.BorderBrush = borderBrush;
+
+        // The default WPF ContextMenu template can draw its own system frame.
+        // Replace it with a minimal template so the visible border is exactly
+        // the 1px border defined above and cannot fall back to a white frame.
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.BackgroundProperty, background);
+        border.SetValue(Border.BorderBrushProperty, borderBrush);
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+        border.SetValue(Border.SnapsToDevicePixelsProperty, true);
+        border.SetValue(Border.PaddingProperty, new Thickness(0));
+
+        var itemsPresenter = new FrameworkElementFactory(typeof(ItemsPresenter));
+        itemsPresenter.SetValue(ItemsPresenter.SnapsToDevicePixelsProperty, true);
+        border.AppendChild(itemsPresenter);
+
+        menu.Template = new ControlTemplate(typeof(ContextMenu))
+        {
+            VisualTree = border
+        };
+
+        foreach (var item in ContextMenuItems)
+        {
+            if (item.IsSeparator)
+            {
+                var separator = new Separator
+                {
+                    Margin = new Thickness(2, 4, 2, 4),
+                    Height = 1
+                };
+
+                if (borderBrush != null)
+                    separator.Background = borderBrush;
+
+                menu.Items.Add(separator);
+                continue;
+            }
+
+            var menuItem = new MenuItem
+            {
+                Header = item.Label,
+                Padding = new Thickness(8, 5, 8, 5),
+                MinHeight = 28,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch
+            };
+
+            if (foreground != null)
+                menuItem.Foreground = foreground;
+
+            menuItem.Click += (_, _) => item.OnInvoke(chart.Plot);
+            menu.Items.Add(menuItem);
+        }
+
+        menu.IsOpen = true;
+    }
+
+    private static void Autoscale(ScottPlot.Plot plot)
+    {
+        plot.Axes.AutoScale();
+        plot.PlotControl?.Refresh();
+    }
+
+    private static void SaveImage(ScottPlot.Plot plot)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = "Plot.png",
+            Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|BMP Files (*.bmp)|*.bmp|WebP Files (*.webp)|*.webp|SVG Files (*.svg)|*.svg|All files (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.FileName))
+            return;
+
+        var format = ScottPlot.ImageFormats.FromFilename(dialog.FileName);
+        var size = plot.RenderManager.LastRender.FigureRect.Size;
+        plot.Save(dialog.FileName, (int)size.Width, (int)size.Height, format);
+    }
+
+    private static void CopyImageToClipboard(ScottPlot.Plot plot)
+    {
+        var size = plot.RenderManager.LastRender.FigureRect.Size;
+        var image = plot.GetImage((int)size.Width, (int)size.Height);
+        var bytes = image.GetImageBytes();
+
+        using var stream = new MemoryStream(bytes);
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        Clipboard.SetImage(bitmap);
+    }
+
+    private void OpenInNewWindow(ScottPlot.Plot plot)
+    {
+        ScottPlot.WPF.WpfPlotViewer.Launch(plot, "Interactive Plot");
+        chart.Refresh();
+    }
+}

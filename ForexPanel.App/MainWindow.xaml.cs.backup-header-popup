@@ -1,0 +1,319 @@
+using System;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+using ForexPanel.App.Theme;
+using ForexPanel.Core;
+
+namespace ForexPanel.App;
+
+public partial class MainWindow : Window
+{
+    private readonly Mt4PipeServer mt4PipeServer;
+    private readonly ChartController chartController;
+    private int candleMinutes = 15;
+    private string currentSymbol = "EURUSD";
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        ThemeManager.Apply(ForexPanel.App.Theme.ThemeMode.System);
+        MainMenu.AddHandler(MenuItem.SubmenuOpenedEvent, new RoutedEventHandler(MainMenu_SubmenuOpened));
+        mt4PipeServer = new Mt4PipeServer();
+        mt4PipeServer.MessageReceived += Mt4PipeServer_MessageReceived;
+        chartController = new ChartController(Chart, UpdateCandleInfo);
+        ApplyChartSurfaceTheme();
+
+        MainToolbar.SymbolChanged += (_, symbol) =>
+        {
+            currentSymbol = symbol;
+            chartController.Rebuild(currentSymbol, candleMinutes);
+        };
+        MainToolbar.TimeframeChanged += (_, timeframe) =>
+        {
+            candleMinutes = timeframe switch
+            {
+                "M1" => 1, "M5" => 5, "M15" => 15, "M30" => 30,
+                "H1" => 60, "H4" => 240, "D1" => 1440, _ => candleMinutes
+            };
+            chartController.Rebuild(currentSymbol, candleMinutes);
+        };
+
+        Loaded += MainWindow_Loaded;
+        Closed += MainWindow_Closed;
+        StateChanged += MainWindow_StateChanged;
+        UpdateThemeMenuChecks();
+    }
+
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        UpdateThemeMenuChecks();
+        ApplyChartSurfaceTheme();
+        ApplyMaximizeBounds();
+        try
+        {
+            await mt4PipeServer.StartAsync();
+            Debug.WriteLine("ForexPanel MT4 Pipe Server started.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"MT4 Pipe Server error: {ex.Message}");
+        }
+    }
+
+    private async void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        try
+        {
+            MainToolbar.SaveLayout();
+            await mt4PipeServer.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"MT4 Pipe Server shutdown error: {ex.Message}");
+        }
+    }
+
+    private void ApplyTheme(ForexPanel.App.Theme.ThemeMode mode)
+    {
+        ThemeManager.Apply(mode);
+        ApplyChartSurfaceTheme();
+        UpdateThemeMenuChecks();
+    }
+
+    private void MainMenu_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (e.OriginalSource is not MenuItem menuItem)
+            return;
+
+        Dispatcher.BeginInvoke(
+            DispatcherPriority.Loaded,
+            new Action(() => ApplyOpenedSubmenuTheme(menuItem)));
+    }
+
+    private void ApplyOpenedSubmenuTheme(MenuItem menuItem)
+    {
+        var background = TryFindResource("Menu.Static.Background") as Brush;
+        var borderBrush = TryFindResource("Menu.Static.Border") as Brush;
+
+        if (background == null)
+            return;
+
+        if (menuItem.Template.FindName("SubMenuBorder", menuItem) is Border submenuBorder)
+        {
+            submenuBorder.Background = background;
+            if (borderBrush != null)
+                submenuBorder.BorderBrush = borderBrush;
+
+            submenuBorder.MinWidth = 200;
+            submenuBorder.Padding = new Thickness(4);
+            HideDefaultSubmenuDecorations(submenuBorder);
+        }
+
+        if (menuItem.Template.FindName("NestedSubMenuBorder", menuItem) is Border nestedSubmenuBorder)
+        {
+            nestedSubmenuBorder.Background = background;
+            if (borderBrush != null)
+                nestedSubmenuBorder.BorderBrush = borderBrush;
+
+            nestedSubmenuBorder.MinWidth = 200;
+            nestedSubmenuBorder.Padding = new Thickness(4);
+            HideDefaultSubmenuDecorations(nestedSubmenuBorder);
+        }
+
+        if (menuItem.Template.FindName("OpaqueRect", menuItem) is Rectangle opaqueRect)
+            opaqueRect.Fill = background;
+    }
+
+    private static void HideDefaultSubmenuDecorations(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is Rectangle rectangle && IsDefaultSubmenuDecoration(rectangle))
+            {
+                rectangle.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                HideDefaultSubmenuDecorations(child);
+            }
+        }
+    }
+
+    private static bool IsDefaultSubmenuDecoration(Rectangle rectangle)
+    {
+        var margin = rectangle.Margin;
+
+        if (Math.Abs(rectangle.Width - 28) < 0.1 &&
+            Math.Abs(margin.Left - 1) < 0.1 &&
+            Math.Abs(margin.Top - 2) < 0.1)
+        {
+            return true;
+        }
+
+        if (Math.Abs(rectangle.Width - 1) < 0.1 &&
+            Math.Abs(margin.Top - 2) < 0.1 &&
+            (Math.Abs(margin.Left - 29) < 0.1 || Math.Abs(margin.Left - 30) < 0.1))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ApplyChartSurfaceTheme()
+    {
+        if (Chart == null)
+            return;
+
+        var backgroundBrush = TryFindResource("Color.App.Background") as System.Windows.Media.SolidColorBrush;
+        var gridBrush = TryFindResource("Color.Chart.Grid") as System.Windows.Media.SolidColorBrush;
+        var textBrush = TryFindResource("Color.Chart.Text") as System.Windows.Media.SolidColorBrush;
+
+        if (backgroundBrush != null)
+        {
+            var backgroundColor = ScottPlot.Color.FromARGB(
+                backgroundBrush.Color.A << 24 |
+                backgroundBrush.Color.R << 16 |
+                backgroundBrush.Color.G << 8 |
+                backgroundBrush.Color.B);
+            Chart.Background = backgroundBrush;
+            Chart.Plot.FigureBackground.Color = backgroundColor;
+            Chart.Plot.DataBackground.Color = backgroundColor;
+        }
+
+        if (gridBrush != null)
+        {
+            var gridColor = ScottPlot.Color.FromARGB(
+                gridBrush.Color.A << 24 |
+                gridBrush.Color.R << 16 |
+                gridBrush.Color.G << 8 |
+                gridBrush.Color.B);
+            Chart.Plot.Grid.IsVisible = true;
+            Chart.Plot.Grid.MajorLineColor = gridColor;
+            Chart.Plot.Grid.MajorLineWidth = 1;
+        }
+
+        if (textBrush != null)
+        {
+            var textColor = ScottPlot.Color.FromARGB(
+                textBrush.Color.A << 24 |
+                textBrush.Color.R << 16 |
+                textBrush.Color.G << 8 |
+                textBrush.Color.B);
+            Chart.Plot.Axes.Right.TickLabelStyle.ForeColor = textColor;
+            Chart.Plot.Axes.Bottom.TickLabelStyle.ForeColor = textColor;
+        }
+
+        Chart.Refresh();
+    }
+
+    private void ApplyMaximizeBounds()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            MaxWidth = SystemParameters.WorkArea.Width;
+            MaxHeight = SystemParameters.WorkArea.Height;
+        }
+        else
+        {
+            MaxWidth = double.PositiveInfinity;
+            MaxHeight = double.PositiveInfinity;
+        }
+    }
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        ApplyMaximizeBounds();
+        MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+    }
+
+    private void UpdateThemeMenuChecks()
+    {
+        if (LightThemeMenuItem == null || DarkThemeMenuItem == null || SystemThemeMenuItem == null)
+            return;
+
+        LightThemeMenuItem.IsCheckable = true;
+        DarkThemeMenuItem.IsCheckable = true;
+        SystemThemeMenuItem.IsCheckable = true;
+        LightThemeMenuItem.IsChecked = ThemeManager.CurrentMode == ForexPanel.App.Theme.ThemeMode.Light;
+        DarkThemeMenuItem.IsChecked = ThemeManager.CurrentMode == ForexPanel.App.Theme.ThemeMode.Dark;
+        SystemThemeMenuItem.IsChecked = ThemeManager.CurrentMode == ForexPanel.App.Theme.ThemeMode.System;
+    }
+
+    private void LightThemeMenuItem_Click(object sender, RoutedEventArgs e) => ApplyTheme(ForexPanel.App.Theme.ThemeMode.Light);
+    private void DarkThemeMenuItem_Click(object sender, RoutedEventArgs e) => ApplyTheme(ForexPanel.App.Theme.ThemeMode.Dark);
+    private void SystemThemeMenuItem_Click(object sender, RoutedEventArgs e) => ApplyTheme(ForexPanel.App.Theme.ThemeMode.System);
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            MaximizeButton_Click(sender, e);
+            return;
+        }
+        if (e.LeftButton == MouseButtonState.Pressed)
+            DragMove();
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        ApplyMaximizeBounds();
+        MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void CollapseToolbarButton_Click(object sender, RoutedEventArgs e)
+    {
+        MainToolbar.ToggleCollapse();
+        CollapseToolbarButton.Content = MainToolbar.IsCollapsed ? "▼" : "▲";
+        CollapseToolbarButton.ToolTip = MainToolbar.IsCollapsed ? "Expand Toolbar" : "Collapse Toolbar";
+        CollapseToolbarButton.Margin = MainToolbar.IsCollapsed ? new Thickness(0, 0, 8, 0) : new Thickness(0, -7, 8, 0);
+    }
+
+    private void Mt4PipeServer_MessageReceived(string message)
+    {
+        Debug.WriteLine($"MT4 -> ForexPanel: {message}");
+        Dispatcher.Invoke(() => Mt4LogText.Text += $"MT4 -> ForexPanel: {message}" + Environment.NewLine);
+        if (message.StartsWith("HELLO|")) _ = SendPingToMt4();
+    }
+
+    private async System.Threading.Tasks.Task SendPingToMt4()
+    {
+        try
+        {
+            await mt4PipeServer.SendAsync("PING");
+            Debug.WriteLine("ForexPanel -> MT4: PING");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"PING error: {ex.Message}");
+        }
+    }
+
+    private void UpdateCandleInfo(Candle? candle)
+    {
+        if (candle == null)
+        {
+            CandleTimeText.Text = "Time:"; CandleOpenText.Text = "Open:"; CandleHighText.Text = "High:";
+            CandleLowText.Text = "Low:"; CandleCloseText.Text = "Close:"; CandleVolumeText.Text = "Volume:";
+            return;
+        }
+        CandleTimeText.Text = $"Time: {candle.Time:yyyy-MM-dd HH:mm}";
+        CandleOpenText.Text = $"Open: {candle.Open:F5}";
+        CandleHighText.Text = $"High: {candle.High:F5}";
+        CandleLowText.Text = $"Low: {candle.Low:F5}";
+        CandleCloseText.Text = $"Close: {candle.Close:F5}";
+        CandleVolumeText.Text = $"Volume: {candle.Volume:F0}";
+    }
+}

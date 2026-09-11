@@ -1,0 +1,88 @@
+<UserControl x:Class="ForexPanel.App.Toolbar.ToolbarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinHeight="0"
+             HorizontalAlignment="Stretch">
+
+    <UserControl.Resources>
+        <Style x:Key="ToolbarButtonBaseStyle" TargetType="{x:Type ButtonBase}">
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="ToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource ToolbarButtonBaseStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Color.Toolbar.ButtonHover}"/><Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Color.Toolbar.ButtonHoverBorder}"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource Color.Toolbar.ButtonPressed}"/><Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource Color.Toolbar.ButtonPressedBorder}"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ToolbarIconStyle" TargetType="{x:Type Path}">
+            <Setter Property="Width" Value="17"/><Setter Property="Height" Value="17"/><Setter Property="Stroke" Value="{DynamicResource Color.Toolbar.Icon}"/><Setter Property="Fill" Value="Transparent"/><Setter Property="StrokeThickness" Value="1.5"/><Setter Property="Stretch" Value="Uniform"/>
+        </Style>
+
+        <Style TargetType="{x:Type ContextMenu}">
+            <Setter Property="Background" Value="{DynamicResource Color.Toolbar.GroupBackground}"/><Setter Property="BorderBrush" Value="{DynamicResource Color.Toolbar.GroupBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ContextMenu}">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ItemsPresenter/></Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type MenuItem}">
+            <Setter Property="Foreground" Value="{DynamicResource Color.Control.Foreground}"/><Setter Property="Background" Value="Transparent"/><Setter Property="Padding" Value="10,6"/><Setter Property="MinHeight" Value="30"/><Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="MenuItemBorder" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource Color.Toolbar.ButtonHover}"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="{x:Type Separator}"><Setter Property="Height" Value="1"/><Setter Property="Margin" Value="4,3"/><Setter Property="Background" Value="{DynamicResource Color.Toolbar.GroupBorder}"/></Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource Color.Toolbar.Background}" BorderBrush="{DynamicResource Color.Toolbar.Border}" BorderThickness="0,0,0,1">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition x:Name="TopRowDefinition" Height="0"/><RowDefinition x:Name="BottomRowDefinition" Height="0"/></Grid.RowDefinitions>
+            <ScrollViewer x:Name="TopGroupsScroll" Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" CanContentScroll="False" AllowDrop="True" DragOver="GroupsPanel_DragOver" Drop="GroupsPanel_Drop">
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel x:Name="TopGroupsPanel" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" AllowDrop="True" Background="Transparent" DragOver="GroupsPanel_DragOver" Drop="GroupsPanel_Drop"/>
+                    <Button x:Name="TopOverflowButton" Grid.Column="1" Width="34" Height="34" Margin="1,0,2,0" Padding="0" Content="⋮" FontSize="18" VerticalAlignment="Center" Visibility="Collapsed" Style="{StaticResource ToolbarButtonStyle}" ToolTip="More tools" Click="OverflowButton_Click"/>
+                </Grid>
+            </ScrollViewer>
+            <ScrollViewer x:Name="BottomGroupsScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" CanContentScroll="False" AllowDrop="True" DragOver="GroupsPanel_DragOver" Drop="GroupsPanel_Drop">
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel x:Name="BottomGroupsPanel" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" AllowDrop="True" Background="Transparent" DragOver="GroupsPanel_DragOver" Drop="GroupsPanel_Drop"/>
+                    <Button x:Name="BottomOverflowButton" Grid.Column="1" Width="34" Height="34" Margin="1,0,2,0" Padding="0" Content="⋮" FontSize="18" VerticalAlignment="Center" Visibility="Collapsed" Style="{StaticResource ToolbarButtonStyle}" ToolTip="More tools" Click="OverflowButton_Click"/>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

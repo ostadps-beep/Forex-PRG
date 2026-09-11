@@ -1,0 +1,25 @@
+FOREXPANEL-A CHART BODY REFERENCE SNAPSHOT
+
+Purpose:
+- Preserve the exact ChartController implementation that existed before the chart-body diagnostic work.
+- This file is reference-only. It is NOT compiled and MUST NOT replace ChartController.cs automatically.
+- ChartController.cs remains protected and untouched.
+
+Source:
+ForexPanel.App/ChartController.cs
+Commit baseline: current main state at time of diagnostic snapshot.
+
+Important observed behavior:
+- Candlestick chart with 250 generated candles.
+- Right-side price axis and bottom DateTime axis.
+- Left mouse drag in the plot body pans both X and Y.
+- Dragging the rightmost 100 px changes vertical price scale.
+- Dragging the bottom 35 px sets timeScaleDrag, but PreviewMouseMove does not process timeScaleDrag.
+- Mouse wheel shifts the X range by 10%; it does not zoom.
+- Built-in ScottPlot left-drag pan and right-drag zoom are disabled.
+- Built-in ScottPlot mouse-wheel zoom is removed.
+
+Diagnostic conclusion from the implementation:
+The current chart body uses custom mouse interaction logic instead of ScottPlot 5's standard interaction responses. Horizontal time zoom is not implemented, bottom-axis drag is incomplete, and wheel behavior is scroll-only.
+
+Do not edit this reference file as part of normal chart development. Create a new snapshot if a new baseline is required.
