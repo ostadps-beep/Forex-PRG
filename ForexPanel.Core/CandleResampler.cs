@@ -43,10 +43,13 @@ public static class CandleResampler
 
         foreach (Candle c in source)
         {
-            int flooredMinute = (c.Time.Minute / minutes) * minutes;
-            DateTime thisBucketStart = new DateTime(
-                c.Time.Year, c.Time.Month, c.Time.Day, c.Time.Hour, 0, 0)
-                .AddMinutes(flooredMinute);
+            // Floor against minutes-since-midnight (not minutes-within-hour), so this works
+            // correctly for any bucket size up to a day - including H4 (240 minutes), where
+            // flooring only c.Time.Minute (always 0-59) against 240 would always give 0 and
+            // silently collapse every bucket to 1-hour granularity instead of 4 hours.
+            int minutesSinceMidnight = c.Time.Hour * 60 + c.Time.Minute;
+            int flooredMinutes = (minutesSinceMidnight / minutes) * minutes;
+            DateTime thisBucketStart = c.Time.Date.AddMinutes(flooredMinutes);
 
             if (bucketStart == null)
             {
