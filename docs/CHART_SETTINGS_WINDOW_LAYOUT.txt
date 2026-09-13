@@ -1,0 +1,43 @@
+WINDOW: Settings
+
++--------------------------------------------------------------------------------------+
+| Title bar: [Settings]                                                                |
++--------------------------------------------------------------------------------------+
+| LEFT PANEL (Sidebar)            | RIGHT PANEL (Header + Content)                     |
+|---------------------------------|----------------------------------------------------|
+|  [Chart] (selected)             |  Header:                                           |
+|  Axes                           |    Title: Chart Settings                           |
+|  Candles                        |    Description: Configure chart appearance &       |
+|  Grid & Background              |                 behavior.                          |
+|  Drawing Tools                  |----------------------------------------------------|
+|  Analytical Modules             |  Content:                                          |
+|  HUD & Overlay                  |                                                    |
+|  Performance                    |  [Group Box: General]                             |
+|  Workspace                      |    - Label: Chart Type                             |
+|  Advanced                       |      Control: Dropdown [Candlestick | Line | ...]  |
+|                                 |                                                    |
+|                                 |    - Label: Visible Candles                        |
+|                                 |      Control: Numeric input [ 500 ]                |
+|                                 |                                                    |
+|                                 |    - Label: Auto Fit                               |
+|                                 |      Control: Toggle [ ON / OFF ]                  |
+|                                 |                                                    |
+|                                 |  [Group Box: Display]                             |
+|                                 |    - Label: Background Color                       |
+|                                 |      Control: Color picker                         |
+|                                 |                                                    |
+|                                 |    - Label: Grid Style                             |
+|                                 |      Control: Dropdown [ None | Solid | Dash ]     |
+|                                 |                                                    |
+|                                 |  [Group Box: Behavior]                            |
+|                                 |    - Label: Zoom Behavior                          |
+|                                 |      Control: Dropdown [ Time / Price / Both ]     |
+|                                 |                                                    |
+|                                 |    - Label: Scroll Speed                           |
+|                                 |      Control: Slider [ 0 … 100 ]                   |
+|                                 |                                                    |
+|                                 |    - Label: Mouse Wheel                            |
+|                                 |      Control: Dropdown [ Zoom / Scroll ]           |
++--------------------------------------------------------------------------------------+
+|  Buttons (Footer): [Apply]   [OK]   [Cancel]   [Reset to Default]                    |
++--------------------------------------------------------------------------------------+

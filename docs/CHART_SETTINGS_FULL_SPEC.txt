@@ -1,0 +1,447 @@
+DOCUMENT: Full Chart Settings Specification
+SYSTEM: Master Analytical System (Python/C/C++ + WPF)
+TYPE: Complete Configuration Specification + Behavior Definitions
+FORMAT: Plain Text (Copy/Paste Ready)
+
+======================================================================================
+SECTION 1 — PURPOSE
+======================================================================================
+
+This document defines the complete configuration system for the chart engine of the 
+Master Analytical System. It includes:
+
+- All categories
+- All adjustable options
+- Full behavior definitions for each option
+- UI structure
+- Grouping rules
+- Interaction logic
+
+This system is 90% analytical and must provide maximum control to the user. The model 
+must implement all options exactly as defined.
+
+======================================================================================
+SECTION 2 — WINDOW STRUCTURE
+======================================================================================
+
+The settings window contains:
+
+1. Sidebar (categories)
+2. Header (title + description)
+3. Content Area (grouped settings)
+4. Footer (Apply, OK, Cancel, Reset)
+
+Sidebar Categories:
+- Chart
+- Axes
+- Candles
+- Grid & Background
+- Drawing Tools
+- Analytical Modules
+- HUD & Overlay
+- Performance
+- Workspace
+- Advanced
+
+======================================================================================
+SECTION 3 — FULL SETTINGS LIST + BEHAVIOR DEFINITIONS
+======================================================================================
+
+--------------------------------------------------------------------------------------
+3.1 CHART SETTINGS
+--------------------------------------------------------------------------------------
+
+OPTION: Chart Type
+VALUES: Candlestick / Line / Histogram / Combined
+BEHAVIOR:
+- Defines how price data is visually represented.
+- Candlestick: shows OHLC with body + wicks.
+- Line: shows close price only.
+- Histogram: vertical bars representing values.
+- Combined: multiple representations layered.
+
+OPTION: Zoom Behavior
+VALUES: Time Axis / Price Axis / Both / Zoom Speed
+BEHAVIOR:
+- Time Axis: zoom stretches/compresses horizontal scale.
+- Price Axis: zoom stretches/compresses vertical scale.
+- Both: zoom affects both axes simultaneously.
+- Zoom Speed: controls sensitivity of zooming.
+
+OPTION: Scroll Behavior
+VALUES: Scroll Speed / Smooth Scroll
+BEHAVIOR:
+- Scroll Speed: horizontal movement speed of chart.
+- Smooth Scroll: enables animated scrolling.
+
+OPTION: Visible Candles Count
+BEHAVIOR:
+- Defines how many candles are rendered at once.
+- Higher values require more GPU/CPU.
+
+OPTION: Auto Fit
+VALUES: On/Off
+BEHAVIOR:
+- Automatically adjusts price axis to fit visible candles.
+
+OPTION: Mouse Wheel Behavior
+VALUES: Zoom / Scroll
+BEHAVIOR:
+- Zoom: wheel zooms chart.
+- Scroll: wheel moves chart horizontally.
+
+--------------------------------------------------------------------------------------
+3.2 AXES SETTINGS
+--------------------------------------------------------------------------------------
+
+PRICE AXIS:
+
+OPTION: Position
+VALUES: Left / Right
+BEHAVIOR:
+- Defines where price scale is drawn.
+
+OPTION: Show Last Price
+BEHAVIOR:
+- Displays the latest price marker on the axis.
+
+OPTION: Show Horizontal Grid
+BEHAVIOR:
+- Draws horizontal grid lines aligned with price levels.
+
+OPTION: Number Format
+VALUES: Decimal Count / Show +/-
+BEHAVIOR:
+- Decimal Count: number of decimal places.
+- Show +/-: displays positive/negative signs.
+
+OPTION: Axis Color
+BEHAVIOR:
+- Color of price axis line and labels.
+
+OPTION: Axis Thickness
+BEHAVIOR:
+- Pixel thickness of axis line.
+
+TIME AXIS:
+
+OPTION: Position
+VALUES: Bottom / Top
+BEHAVIOR:
+- Defines where time scale is drawn.
+
+OPTION: Show Vertical Grid
+BEHAVIOR:
+- Draws vertical grid lines aligned with time intervals.
+
+OPTION: Time Format
+VALUES: HH:MM / Date / Combined
+BEHAVIOR:
+- HH:MM: time only.
+- Date: date only.
+- Combined: both.
+
+OPTION: Show Sessions
+BEHAVIOR:
+- Marks trading sessions visually (future feature).
+
+--------------------------------------------------------------------------------------
+3.3 CANDLE SETTINGS
+--------------------------------------------------------------------------------------
+
+OPTION: Bullish Candle Color
+BEHAVIOR:
+- Color of upward candles.
+
+OPTION: Bearish Candle Color
+BEHAVIOR:
+- Color of downward candles.
+
+OPTION: Wick Color
+BEHAVIOR:
+- Color of candle wicks.
+
+OPTION: Body Thickness
+BEHAVIOR:
+- Pixel thickness of candle body.
+
+OPTION: Wick Thickness
+BEHAVIOR:
+- Pixel thickness of candle wicks.
+
+OPTION: Candle Spacing
+BEHAVIOR:
+- Horizontal spacing between candles.
+
+OPTION: Show Wicks
+VALUES: On/Off
+BEHAVIOR:
+- Toggles wick visibility.
+
+OPTION: Show Body
+VALUES: On/Off
+BEHAVIOR:
+- Toggles candle body visibility (line mode).
+
+--------------------------------------------------------------------------------------
+3.4 GRID & BACKGROUND
+--------------------------------------------------------------------------------------
+
+BACKGROUND:
+
+OPTION: Background Color
+BEHAVIOR:
+- Main chart background color.
+
+OPTION: Gradient Mode
+BEHAVIOR:
+- Enables gradient background.
+
+OPTION: Background Transparency
+BEHAVIOR:
+- Alpha level of background.
+
+GRID:
+
+OPTION: Show Grid
+VALUES: On/Off
+BEHAVIOR:
+- Toggles grid visibility.
+
+OPTION: Horizontal Line Color
+BEHAVIOR:
+- Color of horizontal grid lines.
+
+OPTION: Vertical Line Color
+BEHAVIOR:
+- Color of vertical grid lines.
+
+OPTION: Line Style
+VALUES: Solid / Dash / Dot
+BEHAVIOR:
+- Defines grid line pattern.
+
+OPTION: Grid Transparency
+BEHAVIOR:
+- Alpha level of grid lines.
+
+--------------------------------------------------------------------------------------
+3.5 DRAWING TOOLS
+--------------------------------------------------------------------------------------
+
+For each tool:
+
+OPTION: Color
+BEHAVIOR:
+- Line or shape color.
+
+OPTION: Thickness
+BEHAVIOR:
+- Pixel thickness.
+
+OPTION: Line Style
+VALUES: Solid / Dash / Dot
+BEHAVIOR:
+- Visual style of tool.
+
+OPTION: Transparency
+BEHAVIOR:
+- Alpha level.
+
+OPTION: Snap Behavior
+BEHAVIOR:
+- Snaps tool endpoints to candle highs/lows.
+
+OPTION: Selection Behavior
+BEHAVIOR:
+- Single-click or double-click selection.
+
+OPTION: Show Labels
+VALUES: On/Off
+BEHAVIOR:
+- Toggles text labels.
+
+OPTION: Hotkey
+BEHAVIOR:
+- Keyboard shortcut.
+
+OPTION: Drag Behavior
+BEHAVIOR:
+- Defines how tool moves when dragged.
+
+--------------------------------------------------------------------------------------
+3.6 ANALYTICAL MODULES
+--------------------------------------------------------------------------------------
+
+For each module:
+
+OPTION: Input Parameters
+BEHAVIOR:
+- Numerical inputs controlling calculations.
+
+OPTION: Display Type
+VALUES: Line / Dot / Histogram / Area
+BEHAVIOR:
+- Visual representation of module output.
+
+OPTION: Main Color
+BEHAVIOR:
+- Primary color of module output.
+
+OPTION: Alert Color
+BEHAVIOR:
+- Color used for alert conditions.
+
+OPTION: Background Area Color
+BEHAVIOR:
+- Color of filled area (if applicable).
+
+OPTION: Update Behavior
+VALUES: Every Tick / Every Candle / Every N Candles
+BEHAVIOR:
+- Defines update frequency.
+
+OPTION: Enabled
+VALUES: On/Off
+BEHAVIOR:
+- Toggles module visibility.
+
+OPTION: Transparency
+BEHAVIOR:
+- Alpha level.
+
+OPTION: Thickness
+BEHAVIOR:
+- Pixel thickness.
+
+--------------------------------------------------------------------------------------
+3.7 HUD & OVERLAY
+--------------------------------------------------------------------------------------
+
+OPTION: Displayed Information
+BEHAVIOR:
+- Defines which metrics appear in HUD.
+
+OPTION: HUD Position
+VALUES: Top / Bottom / Corners
+BEHAVIOR:
+- HUD placement.
+
+OPTION: Fixed or Follow Chart
+BEHAVIOR:
+- Fixed: stays in place.
+- Follow: moves with chart.
+
+OPTION: Text Color
+BEHAVIOR:
+- HUD text color.
+
+OPTION: Font Size
+BEHAVIOR:
+- Text size.
+
+OPTION: Font Type
+BEHAVIOR:
+- Font family.
+
+OPTION: HUD Transparency
+BEHAVIOR:
+- Alpha level.
+
+--------------------------------------------------------------------------------------
+3.8 PERFORMANCE
+--------------------------------------------------------------------------------------
+
+OPTION: FPS Limit
+BEHAVIOR:
+- Maximum frames per second.
+
+OPTION: Anti-Aliasing
+BEHAVIOR:
+- Smooths edges of shapes.
+
+OPTION: GPU Acceleration
+BEHAVIOR:
+- Enables GPU rendering.
+
+OPTION: Buffer Size
+BEHAVIOR:
+- Memory buffer for chart data.
+
+OPTION: Log Level
+BEHAVIOR:
+- Verbosity of logs.
+
+OPTION: Error Behavior
+VALUES: Show Message / Log Only / Ignore
+BEHAVIOR:
+- Defines error handling.
+
+--------------------------------------------------------------------------------------
+3.9 WORKSPACE
+--------------------------------------------------------------------------------------
+
+OPTION: Save Layout
+BEHAVIOR:
+- Saves full chart configuration.
+
+OPTION: Load Layout
+BEHAVIOR:
+- Loads saved configuration.
+
+OPTION: Reset Layout
+BEHAVIOR:
+- Restores default layout.
+
+OPTION: Export Settings
+VALUES: JSON/XML
+BEHAVIOR:
+- Exports settings to file.
+
+OPTION: Import Settings
+BEHAVIOR:
+- Loads settings from file.
+
+--------------------------------------------------------------------------------------
+3.10 ADVANCED
+--------------------------------------------------------------------------------------
+
+OPTION: Multi-threading
+BEHAVIOR:
+- Enables parallel processing.
+
+OPTION: Cache Size
+BEHAVIOR:
+- Defines memory cache capacity.
+
+OPTION: Backup/Restore
+BEHAVIOR:
+- Saves and restores full system state.
+
+OPTION: Engine Behavior
+BEHAVIOR:
+- Controls internal engine modes.
+
+OPTION: Python/C Bridge Settings
+BEHAVIOR:
+- Defines communication parameters.
+
+======================================================================================
+SECTION 4 — UI/UX RULES
+======================================================================================
+
+- Sidebar for categories
+- Tabs inside each category
+- Card-style grouping
+- Standard spacing (12px)
+- Tooltips for every option
+- Search bar for finding settings
+- Presets for saving profiles
+- Dark Mode / Light Mode
+- Accent Color selectable
+- Smooth animations
+- Highlight active category
+
+======================================================================================
+END OF DOCUMENT
+======================================================================================
