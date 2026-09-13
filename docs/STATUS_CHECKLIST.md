@@ -120,7 +120,15 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 26. Bridge / MT4 pipe communication
     Baseline claim: no new failures reported
-    Status: UNTESTED -
+    Status: UNTESTED - note: the pipe only implements a connection-test handshake (HELLO/WELCOME/PING/PONG); it does not send or receive any real price/candle data
+
+27. Candle calculation engine
+    Baseline claim: (not covered in baseline doc)
+    Status: BROKEN - no real candle engine exists. `Candle.cs` is a plain data record with no logic. `ChartController.Rebuild()` calls `CreateTestCandles()`, which generates 250 fully synthetic random-walk candles (fixed seed=42) on every rebuild/timeframe switch - there is no M1-to-higher-timeframe resampling/aggregation logic anywhere, and no real market data (from MT4 or any file) is ever fed into the chart. Everything currently displayed is fake data.
+
+28. Theme system reaching the chart itself
+    Baseline claim: (not covered in baseline doc)
+    Status: PARTIAL - ThemeManager/DarkTheme.xaml/LightTheme.xaml correctly theme the WPF chrome (window/toolbar/menus), with near-full parity (one missing SubMenu resource key in Dark). Two real gaps found: (1) a duplicate resource file `Resources/GlobalColors.xaml` defines the same color keys with slightly different hardcoded values (e.g. Chart.Grid differs from DarkTheme.xaml) - a second source of truth that can silently drift; (2) the theme never reaches the actual chart rendering (ScottPlot) - ChartController hardcodes the bottom axis/tick colors to plain white and never applies the already-defined Color.Chart.Background/CandleUp/CandleDown/Grid/Crosshair theme colors to the chart at all, so switching Light/Dark currently changes only the surrounding chrome, not the chart.
 ------------------------------------------------------------
 
 ## How to use this file
