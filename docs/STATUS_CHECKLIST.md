@@ -20,16 +20,17 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 3. Reset View
    Baseline claim: confirmed working
-   Status: FIXED (needs PS verification) - was actually not implemented at all: the "Reset" toolbar tool was registered in the toolbar UI but had zero click handling, so clicking it did nothing (confirmed by code review - no matching branch existed). Implemented from scratch (commit 1019dbd): restores default bar spacing/right-offset on the time axis (via ApplyInitialCandleViewport) and auto-scales the price axis to whatever candles end up visible (new ChartController.ResetPriceScaleToVisibleRange(), which fits only the on-screen candles with padding, unlike ScottPlot's own AutoScale which fits ALL data regardless of the current view). PLEASE VERIFY: zoom/pan/scroll around, then click Reset - view should return to a sensible default showing recent candles with a reasonable price range.
+   Status: OK - PS confirmed working (via the shared PerformResetView() method, also confirmed through the right-click "Reset View" context-menu item). Implemented from scratch (commit 1019dbd/599033c): restores default bar spacing/right-offset on the time axis and auto-scales the price axis to whatever candles end up visible.
 
 4. Timeframe (M1/M5/M15/M30/H1/H4/D1)
    Baseline claim: confirmed working, first-class Toolbar Tool
-   Status: FIXED (needs PS verification) - display bug was the combo box being too narrow (58px) to show two-digit labels (M15/M30/H4) in full. Widened to 68px (commit 599033c). PLEASE VERIFY: all seven timeframe labels display completely.
+   Status: OK - PS confirmed working. Fix was widening the combo box 58px→68px so two-digit labels (M15/M30/H4) display fully (commit 599033c).
 
 5. AutoScroll
    Baseline claim: confirmed working
    Status: FIXED (needs PS verification) - was actually not implemented at all: the "AutoScroll" toolbar tool had zero click handling (confirmed by code review). Implemented from scratch (commit 1019dbd) as a toggle: when turned ON, immediately snaps/pins the view to the latest candle (right-offset reset to 0). Note: there is no live data feed yet to continuously re-anchor to as new bars arrive (that's separate, later work per the candle-engine scope decision) - so this delivers the "jump to and stay pinned on latest" behavior that's testable right now, not continuous live tracking. PLEASE VERIFY: pan/scroll away from the latest candle, then click AutoScroll - it should jump back to show the most recent candle and toggle-highlight correctly.
-   CLARIFICATION (PS follow-up): the "AutoScroll in the right-click menu" PS remembered was actually ScottPlot's own built-in "Autoscale" default context-menu item, unrelated to the toolbar AutoScroll tool - it called the raw AutoScale() which fits ALL candles into view (hence the "compressed" look), completely bypassing our CandleLayoutModel. Fixed (commit 599033c): that context-menu item is now repointed to the same proper Reset View logic as the toolbar's Reset button (and relabeled "Reset View" instead of "Autoscale"). PLEASE VERIFY: right-click the chart - the item should now say "Reset View" and behave like the toolbar Reset button, not compress the view.
+   CLARIFICATION (PS follow-up): the "AutoScroll in the right-click menu" PS remembered was actually ScottPlot's own built-in "Autoscale" default context-menu item, unrelated to the toolbar AutoScroll tool - it called the raw AutoScale() which fits ALL candles into view (hence the "compressed" look), completely bypassing our CandleLayoutModel. Fixed and PS confirmed OK (commit 599033c): that context-menu item is now repointed to the same proper Reset View logic as the toolbar's Reset button (relabeled "Reset View" instead of "Autoscale").
+   The toolbar AutoScroll toggle itself (jump-to-latest behavior) is still PLEASE VERIFY - not yet explicitly re-confirmed by PS.
 
 6. ChartShift
    Baseline claim: confirmed working
@@ -62,7 +63,7 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 13. Cursor mode
     Baseline claim: needs verification
-    Status: FIXED (needs PS verification) - the "Cursor" toolbar tool had zero click handling before (confirmed by code review). Implemented (commit 599033c): Cursor now acts as the standard/neutral pointer mode - clicking it deactivates Crosshair if it's currently active (and un-highlights that button), returning the chart to plain interaction. PLEASE VERIFY: enable Crosshair, then click Cursor - Crosshair should turn off immediately.
+    Status: OK - PS confirmed working. Cursor now acts as the standard/neutral pointer mode (commit 599033c) - clicking it deactivates Crosshair if it's currently active (and un-highlights that button).
 
 14. Volume
     Baseline claim: registered in toolbar, not fully wired
