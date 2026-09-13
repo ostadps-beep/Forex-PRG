@@ -24,11 +24,12 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 4. Timeframe (M1/M5/M15/M30/H1/H4/D1)
    Baseline claim: confirmed working, first-class Toolbar Tool
-   Status: PARTIAL - display bug with two-digit timeframe numbers (e.g. M15, M30, H4): the second digit is not visible/rendered
+   Status: FIXED (needs PS verification) - display bug was the combo box being too narrow (58px) to show two-digit labels (M15/M30/H4) in full. Widened to 68px (commit 599033c). PLEASE VERIFY: all seven timeframe labels display completely.
 
 5. AutoScroll
    Baseline claim: confirmed working
    Status: FIXED (needs PS verification) - was actually not implemented at all: the "AutoScroll" toolbar tool had zero click handling (confirmed by code review). Implemented from scratch (commit 1019dbd) as a toggle: when turned ON, immediately snaps/pins the view to the latest candle (right-offset reset to 0). Note: there is no live data feed yet to continuously re-anchor to as new bars arrive (that's separate, later work per the candle-engine scope decision) - so this delivers the "jump to and stay pinned on latest" behavior that's testable right now, not continuous live tracking. PLEASE VERIFY: pan/scroll away from the latest candle, then click AutoScroll - it should jump back to show the most recent candle and toggle-highlight correctly.
+   CLARIFICATION (PS follow-up): the "AutoScroll in the right-click menu" PS remembered was actually ScottPlot's own built-in "Autoscale" default context-menu item, unrelated to the toolbar AutoScroll tool - it called the raw AutoScale() which fits ALL candles into view (hence the "compressed" look), completely bypassing our CandleLayoutModel. Fixed (commit 599033c): that context-menu item is now repointed to the same proper Reset View logic as the toolbar's Reset button (and relabeled "Reset View" instead of "Autoscale"). PLEASE VERIFY: right-click the chart - the item should now say "Reset View" and behave like the toolbar Reset button, not compress the view.
 
 6. ChartShift
    Baseline claim: confirmed working
@@ -37,6 +38,7 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 7. Grid (toolbar execution)
    Baseline claim: works, currently frozen - do not modify while frozen
    Status: PARTIAL - works but only a basic/initial implementation, not yet fully complete (still frozen, do not modify without PS's go-ahead)
+   NOTE (PS, 2026-09-13): Grid needs multiple configurable options (spacing/style/color etc.), which requires a general Chart Settings dialog/infrastructure to exist FIRST before those options can be added - this is scoped as a future task, not started yet.
 
 8. View menu -> Grid (presence checkbox)
    Baseline claim: not correctly wired, deliberately deferred
@@ -60,7 +62,7 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 13. Cursor mode
     Baseline claim: needs verification
-    Status: PARTIAL - needs proper state management: after selecting Cursor/Crosshair mode, it should be able to deactivate/reset to neutral, but currently it does not
+    Status: FIXED (needs PS verification) - the "Cursor" toolbar tool had zero click handling before (confirmed by code review). Implemented (commit 599033c): Cursor now acts as the standard/neutral pointer mode - clicking it deactivates Crosshair if it's currently active (and un-highlights that button), returning the chart to plain interaction. PLEASE VERIFY: enable Crosshair, then click Cursor - Crosshair should turn off immediately.
 
 14. Volume
     Baseline claim: registered in toolbar, not fully wired
