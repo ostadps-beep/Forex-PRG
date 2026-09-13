@@ -39,6 +39,14 @@ public sealed class ChartController
     private ScottPlot.Color? themeCandleDown;
     private ScottPlot.Color? themeCrosshair;
 
+    // Real candle calculation engine state: a persistent M1 baseline per symbol, resampled
+    // on demand into whatever timeframe is requested (see CandleResampler). The baseline is
+    // generated once per symbol and reused across timeframe switches, so the same underlying
+    // price history is consistent no matter which timeframe you're viewing it at - this
+    // replaces the old approach of regenerating a brand-new random dataset per timeframe.
+    private readonly Dictionary<string, List<Candle>> baselineCache = new();
+    private const int BaselineM1Minutes = 260 * 1440; // ~260 days of M1 bars - enough for CandleCount daily candles plus buffer
+
     public ChartController(
         ScottPlot.WPF.WpfPlot chart,
         Action<Candle?>? candleChanged = null)
@@ -143,7 +151,13 @@ public sealed class ChartController
             chart.ReleaseMouseCapture();
 
         chart.Plot.Clear();
-        candles = CreateTestCandles(symbol);
+
+        List<Candle> baseline = GetOrCreateBaseline(symbol);
+        List<Candle> resampled = CandleResampler.Resample(baseline, candleMinutes);
+        candles = resampled.Count > CandleCount
+            ? resampled.Skip(resampled.Count - CandleCount).ToList()
+            : resampled;
+
         AddCandlesticks();
         ConfigureAxes();
         ConfigureGrid();
@@ -158,6 +172,20 @@ public sealed class ChartController
             (initialLimits.Top - initialLimits.Bottom) / 2.0;
 
         chart.Refresh();
+    }
+
+    /// <summary>
+    /// Returns the cached M1 baseline for a symbol, generating it once if it doesn't exist yet.
+    /// The same baseline is reused across every timeframe switch for that symbol.
+    /// </summary>
+    private List<Candle> GetOrCreateBaseline(string symbol)
+    {
+        if (baselineCache.TryGetValue(symbol, out var existing))
+            return existing;
+
+        List<Candle> generated = GenerateM1Baseline(symbol);
+        baselineCache[symbol] = generated;
+        return generated;
     }
 
     private void AddCandlesticks()
@@ -360,14 +388,21 @@ public sealed class ChartController
             .First();
     }
 
-    private List<Candle> CreateTestCandles(string symbol)
+    /// <summary>
+    /// Generates a deterministic M1 price series for a symbol. This is still placeholder data
+    /// (no live source is wired up yet - that is a separate, later step), but it is now generated
+    /// ONLY at M1 granularity and cached per-symbol; every displayed timeframe (M5/M15/.../D1)
+    /// is derived from this same series via CandleResampler, so switching timeframe no longer
+    /// changes the underlying price history - only how it's aggregated for display.
+    /// </summary>
+    private List<Candle> GenerateM1Baseline(string symbol)
     {
-        List<Candle> result = new();
+        List<Candle> result = new(BaselineM1Minutes);
         double price = GetStartingPrice(symbol);
-        DateTime time = DateTime.Now.AddMinutes(-(CandleCount * candleMinutes));
-        Random random = new(42);
+        DateTime time = DateTime.Now.AddMinutes(-BaselineM1Minutes);
+        Random random = new(symbol.GetHashCode());
 
-        for (int i = 0; i < CandleCount; i++)
+        for (int i = 0; i < BaselineM1Minutes; i++)
         {
             double open = price;
             double change = GetPriceChange(symbol, random);
@@ -387,7 +422,7 @@ public sealed class ChartController
             });
 
             price = close;
-            time = time.AddMinutes(candleMinutes);
+            time = time.AddMinutes(1);
         }
 
         return result;
