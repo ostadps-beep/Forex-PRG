@@ -47,6 +47,8 @@ public sealed class ChartController
     private readonly Dictionary<string, List<Candle>> baselineCache = new();
     private const int BaselineM1Minutes = 260 * 1440; // ~260 days of M1 bars - enough for CandleCount daily candles plus buffer
 
+    private ForexPanel.App.Settings.ChartSettings? chartSettings;
+
     public ChartController(
         ScottPlot.WPF.WpfPlot chart,
         Action<Candle?>? candleChanged = null)
@@ -178,6 +180,55 @@ public sealed class ChartController
         chart.Plot.Grid.IsVisible = gridEnabled;
     }
 
+    /// <summary>
+    /// Applies Chart Settings (Candles/Grid/Axes categories) to the chart, live. These values
+    /// take precedence over whatever the Theme most recently set, by writing into the same
+    /// cached fields ApplyTheme uses - so Rebuild's existing per-call re-application keeps
+    /// them consistent across timeframe/symbol switches without duplicating that logic.
+    /// KNOWN LIMITATION (documented in docs/CHART_SETTINGS_PLAN.md): if the user switches
+    /// Light/Dark theme AFTER customizing these, the theme switch will currently overwrite
+    /// them again (last-write-wins) - proper Settings-over-Theme precedence is a follow-up.
+    /// </summary>
+    public void ApplyChartSettings(ForexPanel.App.Settings.ChartSettings settings)
+    {
+        chartSettings = settings;
+        ApplyChartSettingsToChart();
+        chart.Refresh();
+    }
+
+    private void ApplyChartSettingsToChart()
+    {
+        if (chartSettings == null)
+            return;
+
+        var candleSettings = chartSettings.Candles;
+        themeCandleUp = ToScottPlotColor(candleSettings.BullishColor.Effective);
+        themeCandleDown = ToScottPlotColor(candleSettings.BearishColor.Effective);
+        ApplyCandleTheme();
+
+        if (candlePlot != null)
+            candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
+
+        var gridSettings = chartSettings.GridAndBackground;
+        gridEnabled = gridSettings.ShowGrid;
+        ApplyGridVisibility();
+        chart.Plot.Grid.MajorLineColor = ToScottPlotColor(gridSettings.GridColor.Effective);
+        chart.Plot.Grid.MajorLinePattern = gridSettings.LineStyle switch
+        {
+            ForexPanel.App.Settings.LineStyleOption.Dash => ScottPlot.LinePattern.Dashed,
+            ForexPanel.App.Settings.LineStyleOption.Dot => ScottPlot.LinePattern.Dotted,
+            _ => ScottPlot.LinePattern.Solid
+        };
+
+        var backgroundColor = ToScottPlotColor(gridSettings.BackgroundColor.Effective);
+        chart.Plot.FigureBackground.Color = backgroundColor;
+        chart.Plot.DataBackground.Color = backgroundColor;
+
+        var axesSettings = chartSettings.Axes;
+        themeAxisText = ToScottPlotColor(axesSettings.AxisColor.Effective);
+        ApplyAxisTheme();
+    }
+
     public void Rebuild(string symbol, int timeframeMinutes)
     {
         candleMinutes = Math.Max(1, timeframeMinutes);
@@ -200,6 +251,7 @@ public sealed class ChartController
         ConfigureAxes();
         ConfigureGrid();
         CreateCrosshair();
+        ApplyChartSettingsToChart();
         chart.Plot.Axes.AutoScale();
 
         var initialLimits = chart.Plot.Axes.GetLimits(

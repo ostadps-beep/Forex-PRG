@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private bool autoScrollEnabled;
     private bool chartShiftEnabled;
     private const double ChartShiftFraction = 0.15; // MT4-style blank space after the last candle, as a fraction of the visible span
+    private readonly ForexPanel.App.Settings.ChartSettings chartSettings = ForexPanel.App.Settings.ChartSettings.CreateDefault();
     private bool candleLayoutInitialized;
 
     private bool zoomAreaMode;
@@ -327,6 +328,18 @@ public partial class MainWindow : Window
             button.BorderBrush = chartShiftEnabled && chartShiftBorder != null ? chartShiftBorder : Brushes.Transparent;
 
             ApplyCandleLayoutToChart(trueRight);
+            return;
+        }
+
+        if (string.Equals(tool.Id, "Settings", StringComparison.Ordinal))
+        {
+            var window = new ForexPanel.App.Settings.ChartSettingsWindow(
+                chartSettings,
+                () => chartController.ApplyChartSettings(chartSettings))
+            {
+                Owner = this
+            };
+            window.ShowDialog();
             return;
         }
 
