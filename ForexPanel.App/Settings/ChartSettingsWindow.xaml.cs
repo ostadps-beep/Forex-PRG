@@ -217,6 +217,7 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Decimal Places", NumericBox(s.DecimalPlaces, v => { s.DecimalPlaces = (int)v; NotifyChanged(); }, isEnabled: false,
             tooltip: "Reserved - price labels use ScottPlot's automatic formatting for now.")));
         panel.Children.Add(Row("Axis Color", ColorPickerFor(s.AxisColor, NotifyChanged)));
+        panel.Children.Add(Row("Axis Thickness", SliderFor(0.5, 3.0, s.AxisThickness, v => { s.AxisThickness = v; NotifyChanged(); })));
 
         panel.Children.Add(SectionHeader("Time Axis"));
         panel.Children.Add(Row("Position", ComboBoxFor(
@@ -247,10 +248,8 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Bullish Color", ColorPickerFor(s.BullishColor, NotifyChanged)));
         panel.Children.Add(Row("Bearish Color", ColorPickerFor(s.BearishColor, NotifyChanged)));
         panel.Children.Add(Row("Body Thickness", SliderFor(0.1, 1.0, s.BodyThickness, v => { s.BodyThickness = v; NotifyChanged(); })));
-        panel.Children.Add(Row("Show Wicks", CheckBoxFor(s.ShowWicks, v => { s.ShowWicks = v; NotifyChanged(); }, isEnabled: false,
-            tooltip: "Reserved - the current rendering engine doesn't expose independent wick visibility yet.")));
-        panel.Children.Add(Row("Show Body", CheckBoxFor(s.ShowBody, v => { s.ShowBody = v; NotifyChanged(); }, isEnabled: false,
-            tooltip: "Reserved - line-only candle mode isn't implemented yet.")));
+        panel.Children.Add(Row("Show Wicks", CheckBoxFor(s.ShowWicks, v => { s.ShowWicks = v; NotifyChanged(); })));
+        panel.Children.Add(Row("Show Body", CheckBoxFor(s.ShowBody, v => { s.ShowBody = v; NotifyChanged(); })));
 
         return panel;
     }

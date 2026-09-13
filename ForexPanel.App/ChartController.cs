@@ -33,7 +33,7 @@ public sealed class ChartController
     private Point dragStartPixel;
     private double priceScaleStartY;
 
-    private ScottPlot.Plottables.CandlestickPlot? candlePlot;
+    private ConfigurableCandlestickPlot? candlePlot;
     private ScottPlot.Color? themeAxisText;
     private ScottPlot.Color? themeCandleUp;
     private ScottPlot.Color? themeCandleDown;
@@ -207,7 +207,11 @@ public sealed class ChartController
         ApplyCandleTheme();
 
         if (candlePlot != null)
+        {
             candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
+            candlePlot.ShowWicks = candleSettings.ShowWicks;
+            candlePlot.ShowBody = candleSettings.ShowBody;
+        }
 
         var gridSettings = chartSettings.GridAndBackground;
         gridEnabled = gridSettings.ShowGrid;
@@ -227,6 +231,13 @@ public sealed class ChartController
         var axesSettings = chartSettings.Axes;
         themeAxisText = ToScottPlotColor(axesSettings.AxisColor.Effective);
         ApplyAxisTheme();
+        chart.Plot.Axes.Bottom.FrameLineStyle.Width = (float)axesSettings.AxisThickness;
+        chart.Plot.Axes.Right.FrameLineStyle.Width = (float)axesSettings.AxisThickness;
+
+        // Horizontal grid lines are drawn from the Y axis's ticks, vertical from the X axis's -
+        // independently toggleable via IGrid's own XAxisStyle/YAxisStyle (both public).
+        chart.Plot.Grid.YAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowHorizontalGrid;
+        chart.Plot.Grid.XAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowVerticalGrid;
     }
 
     public void Rebuild(string symbol, int timeframeMinutes)
@@ -290,7 +301,9 @@ public sealed class ChartController
                 TimeSpan.FromMinutes(candleMinutes)))
             .ToList();
 
-        candlePlot = chart.Plot.Add.Candlestick(data);
+        var dataSource = new ScottPlot.DataSources.OHLCSourceList(data);
+        candlePlot = new ConfigurableCandlestickPlot(dataSource);
+        chart.Plot.PlottableList.Add(candlePlot);
         candlePlot.Axes.YAxis = chart.Plot.Axes.Right;
         candlePlot.Sequential = false;
         ApplyCandleTheme();
