@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -438,7 +439,54 @@ public partial class MainWindow : Window
     {
         ThemeManager.Apply(mode);
         ApplyChartSurfaceTheme();
+        RefreshToggleToolbarButtonBackgrounds();
         UpdateThemeMenuChecks();
+    }
+
+    /// <summary>
+    /// Re-applies the active/highlighted background+border for toggle-style toolbar buttons
+    /// (Crosshair, Grid) using the CURRENT theme's resources. These are set imperatively via
+    /// TryFindResource rather than {DynamicResource ...} bindings, so unlike most of the UI
+    /// they do not update automatically when the theme changes - without this, a button left
+    /// in its "selected" state keeps the old theme's highlight color after switching themes.
+    /// </summary>
+    private void RefreshToggleToolbarButtonBackgrounds()
+    {
+        var activeBackground = TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
+        var activeBorder = TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
+
+        ApplyToggleButtonVisual("Crosshair", crosshairEnabled, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("Grid", chartController.GridEnabled, activeBackground, activeBorder);
+    }
+
+    private void ApplyToggleButtonVisual(string toolId, bool isActive, Brush? activeBackground, Brush? activeBorder)
+    {
+        if (MainToolbar == null)
+            return;
+
+        foreach (var button in FindButtonsByToolId(MainToolbar, toolId))
+        {
+            button.Background = isActive && activeBackground != null ? activeBackground : Brushes.Transparent;
+            button.BorderBrush = isActive && activeBorder != null ? activeBorder : Brushes.Transparent;
+        }
+    }
+
+    private static IEnumerable<ButtonBase> FindButtonsByToolId(DependencyObject root, string toolId)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+
+            if (child is ButtonBase button &&
+                button.Tag is ForexPanel.App.Toolbar.ToolbarTool tool &&
+                string.Equals(tool.Id, toolId, StringComparison.Ordinal))
+            {
+                yield return button;
+            }
+
+            foreach (var nested in FindButtonsByToolId(child, toolId))
+                yield return nested;
+        }
     }
 
     private void MainMenu_SubmenuOpened(object sender, RoutedEventArgs e)
