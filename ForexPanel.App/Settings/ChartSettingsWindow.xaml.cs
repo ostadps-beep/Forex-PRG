@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace ForexPanel.App.Settings;
 
@@ -470,51 +471,231 @@ public sealed partial class ChartSettingsWindow : Window
         border.SetResourceReference(Border.BorderBrushProperty, "Color.Toolbar.Border");
         popup.Child = border;
 
-        var hexLabel = new TextBlock { Text = "Hex color", Margin = new Thickness(0, 0, 0, 4) };
-        hexLabel.SetResourceReference(TextBlock.ForegroundProperty, "Color.App.Foreground");
+        // --- HSV state for this picker instance ---
+        const double squareSize = 190;
+        var (initH, initS, initV) = RgbToHsv(setting.BaseColor);
+        double hue = initH, sat = initS, val = initV;
 
-        var hexBox = new TextBox { Text = ColorToHex(setting.BaseColor), Margin = new Thickness(0, 0, 0, 8) };
-        var shadeLabel = new TextBlock { Text = $"Shade: {setting.ShadePercent:0}%", Margin = new Thickness(0, 0, 0, 4) };
-        shadeLabel.SetResourceReference(TextBlock.ForegroundProperty, "Color.App.Foreground");
-        var shadeSlider = new Slider { Minimum = 0, Maximum = 200, Value = setting.ShadePercent };
-
-        void Refresh()
+        var hueBase = new Rectangle { Width = squareSize, Height = squareSize };
+        var satOverlay = new Rectangle
         {
+            Width = squareSize,
+            Height = squareSize,
+            Fill = new LinearGradientBrush(Colors.White, Colors.Transparent, new Point(0, 0.5), new Point(1, 0.5))
+        };
+        var valOverlay = new Rectangle
+        {
+            Width = squareSize,
+            Height = squareSize,
+            Fill = new LinearGradientBrush(Colors.Transparent, Colors.Black, new Point(0.5, 0), new Point(0.5, 1))
+        };
+        var svThumb = new Ellipse
+        {
+            Width = 10,
+            Height = 10,
+            Stroke = Brushes.White,
+            StrokeThickness = 1.5,
+            Fill = Brushes.Transparent
+        };
+
+        var svCanvas = new Canvas { Width = squareSize, Height = squareSize, ClipToBounds = true };
+        svCanvas.Children.Add(hueBase);
+        svCanvas.Children.Add(satOverlay);
+        svCanvas.Children.Add(valOverlay);
+        svCanvas.Children.Add(svThumb);
+
+        const double hueBarHeight = 16;
+        var hueBar = new Rectangle
+        {
+            Width = squareSize,
+            Height = hueBarHeight,
+            Fill = BuildHueSpectrumBrush()
+        };
+        var hueThumb = new Rectangle
+        {
+            Width = 3,
+            Height = hueBarHeight,
+            Fill = Brushes.White,
+            Stroke = Brushes.Black,
+            StrokeThickness = 0.5
+        };
+        var hueCanvas = new Canvas { Width = squareSize, Height = hueBarHeight, Margin = new Thickness(0, 8, 0, 0) };
+        hueCanvas.Children.Add(hueBar);
+        hueCanvas.Children.Add(hueThumb);
+
+        var hexBox = new TextBox { Margin = new Thickness(0, 8, 0, 4) };
+        var shadeLabel = new TextBlock { Margin = new Thickness(0, 4, 0, 4) };
+        shadeLabel.SetResourceReference(TextBlock.ForegroundProperty, "Color.App.Foreground");
+        var shadeSlider = new Slider { Minimum = 0, Maximum = 200 };
+
+        void UpdateThumbPositions()
+        {
+            Canvas.SetLeft(svThumb, sat * squareSize - svThumb.Width / 2);
+            Canvas.SetTop(svThumb, (1 - val) * squareSize - svThumb.Height / 2);
+            Canvas.SetLeft(hueThumb, hue / 360.0 * squareSize - hueThumb.Width / 2);
+        }
+
+        void RefreshFromHsv()
+        {
+            hueBase.Fill = new SolidColorBrush(HsvToRgb(hue, 1, 1));
+            setting.BaseColor = HsvToRgb(hue, sat, val);
+            hexBox.Text = ColorToHex(setting.BaseColor);
             swatch.Background = new SolidColorBrush(setting.Effective);
+            UpdateThumbPositions();
             onChanged();
+        }
+
+        void SetFromColor(Color color)
+        {
+            (hue, sat, val) = RgbToHsv(color);
+            setting.BaseColor = color;
+            hueBase.Fill = new SolidColorBrush(HsvToRgb(hue, 1, 1));
+            hexBox.Text = ColorToHex(setting.BaseColor);
+            swatch.Background = new SolidColorBrush(setting.Effective);
+            UpdateThumbPositions();
+            onChanged();
+        }
+
+        bool draggingSv = false;
+        svCanvas.MouseLeftButtonDown += (_, e) => { draggingSv = true; svCanvas.CaptureMouse(); UpdateSvFrom(e.GetPosition(svCanvas)); };
+        svCanvas.MouseLeftButtonUp += (_, _) => { draggingSv = false; svCanvas.ReleaseMouseCapture(); };
+        svCanvas.MouseMove += (_, e) => { if (draggingSv) UpdateSvFrom(e.GetPosition(svCanvas)); };
+
+        void UpdateSvFrom(Point p)
+        {
+            sat = Math.Clamp(p.X / squareSize, 0, 1);
+            val = Math.Clamp(1 - p.Y / squareSize, 0, 1);
+            RefreshFromHsv();
+        }
+
+        bool draggingHue = false;
+        hueCanvas.MouseLeftButtonDown += (_, e) => { draggingHue = true; hueCanvas.CaptureMouse(); UpdateHueFrom(e.GetPosition(hueCanvas)); };
+        hueCanvas.MouseLeftButtonUp += (_, _) => { draggingHue = false; hueCanvas.ReleaseMouseCapture(); };
+        hueCanvas.MouseMove += (_, e) => { if (draggingHue) UpdateHueFrom(e.GetPosition(hueCanvas)); };
+
+        void UpdateHueFrom(Point p)
+        {
+            hue = Math.Clamp(p.X / squareSize, 0, 1) * 360.0;
+            RefreshFromHsv();
+        }
+
+        // Muted, professional preset swatches - a reasonable soft palette rather than raw primaries.
+        Color[] presets =
+        {
+            Color.FromRgb(0x6B, 0x8E, 0xA8), Color.FromRgb(0x7A, 0xA8, 0x8C), Color.FromRgb(0xC4, 0x8A, 0x6E),
+            Color.FromRgb(0xB5, 0x7A, 0x8C), Color.FromRgb(0x9A, 0x8A, 0xC4), Color.FromRgb(0x6E, 0xA8, 0xA8),
+            Color.FromRgb(0x8A, 0x8F, 0x99), Color.FromRgb(0xC4, 0xB0, 0x6E), Color.FromRgb(0xE0, 0xE0, 0xE0),
+            Color.FromRgb(0x30, 0x30, 0x30)
+        };
+        var presetsPanel = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
+        foreach (var preset in presets)
+        {
+            var presetColor = preset; // capture
+            var presetButton = new Border
+            {
+                Width = 20,
+                Height = 20,
+                Margin = new Thickness(2),
+                BorderThickness = new Thickness(1),
+                BorderBrush = Brushes.Gray,
+                Background = new SolidColorBrush(presetColor),
+                Cursor = System.Windows.Input.Cursors.Hand
+            };
+            presetButton.MouseLeftButtonDown += (_, _) => SetFromColor(presetColor);
+            presetsPanel.Children.Add(presetButton);
         }
 
         hexBox.LostFocus += (_, _) =>
         {
             if (TryParseHex(hexBox.Text, out var color))
-            {
-                setting.BaseColor = color;
-                Refresh();
-            }
+                SetFromColor(color);
             else
-            {
                 hexBox.Text = ColorToHex(setting.BaseColor);
-            }
         };
 
         shadeSlider.ValueChanged += (_, e) =>
         {
             setting.ShadePercent = e.NewValue;
             shadeLabel.Text = $"Shade: {e.NewValue:0}%";
-            Refresh();
+            swatch.Background = new SolidColorBrush(setting.Effective);
+            onChanged();
         };
 
-        popupPanel.Children.Add(hexLabel);
+        // Initial values (must happen after all handlers/fields exist).
+        hueBase.Fill = new SolidColorBrush(HsvToRgb(hue, 1, 1));
+        hexBox.Text = ColorToHex(setting.BaseColor);
+        shadeSlider.Value = setting.ShadePercent;
+        shadeLabel.Text = $"Shade: {setting.ShadePercent:0}%";
+
+        popupPanel.Children.Add(svCanvas);
+        popupPanel.Children.Add(hueCanvas);
+        popupPanel.Children.Add(presetsPanel);
         popupPanel.Children.Add(hexBox);
         popupPanel.Children.Add(shadeLabel);
         popupPanel.Children.Add(shadeSlider);
 
+        popup.Opened += (_, _) => UpdateThumbPositions();
         button.Click += (_, _) => popup.IsOpen = !popup.IsOpen;
 
         var container = new Grid();
         container.Children.Add(button);
         container.Children.Add(popup);
         return container;
+    }
+
+    private static LinearGradientBrush BuildHueSpectrumBrush()
+    {
+        var brush = new LinearGradientBrush { StartPoint = new Point(0, 0.5), EndPoint = new Point(1, 0.5) };
+        (double Offset, Color Color)[] stops =
+        {
+            (0.0 / 6, Colors.Red), (1.0 / 6, Colors.Yellow), (2.0 / 6, Colors.Lime),
+            (3.0 / 6, Colors.Cyan), (4.0 / 6, Colors.Blue), (5.0 / 6, Colors.Magenta),
+            (6.0 / 6, Colors.Red)
+        };
+        foreach (var (offset, color) in stops)
+            brush.GradientStops.Add(new GradientStop(color, offset));
+        return brush;
+    }
+
+    private static (double H, double S, double V) RgbToHsv(Color c)
+    {
+        double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+        double max = Math.Max(r, Math.Max(g, b));
+        double min = Math.Min(r, Math.Min(g, b));
+        double delta = max - min;
+
+        double h = 0;
+        if (delta > 0.00001)
+        {
+            if (max == r) h = 60 * (((g - b) / delta) % 6);
+            else if (max == g) h = 60 * (((b - r) / delta) + 2);
+            else h = 60 * (((r - g) / delta) + 4);
+        }
+        if (h < 0) h += 360;
+
+        double s = max <= 0 ? 0 : delta / max;
+        return (h, s, max);
+    }
+
+    private static Color HsvToRgb(double h, double s, double v)
+    {
+        h = ((h % 360) + 360) % 360;
+        double c = v * s;
+        double x = c * (1 - Math.Abs(h / 60.0 % 2 - 1));
+        double m = v - c;
+        double r1, g1, b1;
+
+        if (h < 60) (r1, g1, b1) = (c, x, 0.0);
+        else if (h < 120) (r1, g1, b1) = (x, c, 0.0);
+        else if (h < 180) (r1, g1, b1) = (0.0, c, x);
+        else if (h < 240) (r1, g1, b1) = (0.0, x, c);
+        else if (h < 300) (r1, g1, b1) = (x, 0.0, c);
+        else (r1, g1, b1) = (c, 0.0, x);
+
+        return Color.FromRgb(
+            (byte)Math.Round((r1 + m) * 255),
+            (byte)Math.Round((g1 + m) * 255),
+            (byte)Math.Round((b1 + m) * 255));
     }
 
     private static string ColorToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
