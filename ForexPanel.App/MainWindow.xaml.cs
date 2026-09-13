@@ -51,6 +51,7 @@ public partial class MainWindow : Window
         Chart.AddHandler(UIElement.MouseWheelEvent, new MouseWheelEventHandler(Chart_MouseWheel), true);
         ApplyInitialCandleViewport();
         Chart.Menu = new StyledChartMenu(Chart);
+        FixChartContextMenuAutoscale();
         ApplyChartSurfaceTheme();
 
         MainToolbar.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(MainToolbar_ButtonClick));
@@ -85,6 +86,47 @@ public partial class MainWindow : Window
         Closed += MainWindow_Closed;
         StateChanged += MainWindow_StateChanged;
         UpdateThemeMenuChecks();
+    }
+
+    /// <summary>
+    /// Reset View: restore default bar spacing/right-offset on the time axis and auto-scale
+    /// the price axis to whatever candles end up visible. Shared by the Reset toolbar tool
+    /// and the chart's right-click context menu (see FixChartContextMenuAutoscale).
+    /// </summary>
+    private void PerformResetView()
+    {
+        CancelZoomAreaMode();
+        ApplyInitialCandleViewport();
+        chartController.ResetPriceScaleToVisibleRange();
+    }
+
+    /// <summary>
+    /// ScottPlot's default right-click context menu includes an "Autoscale" item that calls
+    /// the raw Plot.Axes.AutoScale() - this fits ALL plotted candles into view at once,
+    /// completely ignoring our CandleLayoutModel/viewport system, which is what made the
+    /// chart look "compressed"/bunched when PS used it (this is what PS referred to as the
+    /// primitive early "Auto Scroll" behavior in the right-click menu). Repoints that same
+    /// menu entry at our own proper Reset View logic instead of removing/duplicating menu items.
+    /// </summary>
+    private void FixChartContextMenuAutoscale()
+    {
+        if (Chart.Menu is not StyledChartMenu styledMenu)
+            return;
+
+        var items = styledMenu.ContextMenuItems;
+        for (int i = 0; i < items.Count; i++)
+        {
+            // ContextMenuItem is a struct - it must be replaced by index, not mutated in place.
+            if (items[i].Label == "Autoscale")
+            {
+                items[i] = new ScottPlot.ContextMenuItem
+                {
+                    Label = "Reset View",
+                    OnInvoke = _ => PerformResetView()
+                };
+                break;
+            }
+        }
     }
 
     private void ApplyInitialCandleViewport()
@@ -219,6 +261,19 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (string.Equals(tool.Id, "Cursor", StringComparison.Ordinal))
+        {
+            // Cursor = standard/neutral pointer mode. If another exclusive mode (Crosshair)
+            // is currently active, selecting Cursor turns it back off.
+            if (crosshairEnabled)
+            {
+                crosshairEnabled = false;
+                RefreshToggleToolbarButtonBackgrounds();
+                ApplyCrosshairVisibility();
+            }
+            return;
+        }
+
         if (string.Equals(tool.Id, "Crosshair", StringComparison.Ordinal))
         {
             crosshairEnabled = !crosshairEnabled;
@@ -232,11 +287,7 @@ public partial class MainWindow : Window
 
         if (string.Equals(tool.Id, "Reset", StringComparison.Ordinal))
         {
-            // Reset View: restore default bar spacing/right-offset (time axis) and
-            // auto-scale the price axis to whatever ends up visible - mirrors MT4's Reset.
-            CancelZoomAreaMode();
-            ApplyInitialCandleViewport();
-            chartController.ResetPriceScaleToVisibleRange();
+            PerformResetView();
             return;
         }
 

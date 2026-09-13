@@ -105,7 +105,7 @@ namespace ForexPanel.App.Toolbar
 
         private ComboBox CreateTimeframeCombo()
         {
-            var combo = new ComboBox { Width = 58, Height = 30, Margin = new Thickness(3, 0, 3, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Timeframe" };
+            var combo = new ComboBox { Width = 68, Height = 30, Margin = new Thickness(3, 0, 3, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Timeframe" };
             combo.SetResourceReference(Control.BackgroundProperty, "Color.Control.Background"); combo.SetResourceReference(Control.ForegroundProperty, "Color.Control.Foreground"); combo.SetResourceReference(Control.BorderBrushProperty, "Color.Control.Border");
             foreach (var timeframe in TimeframeOptions) combo.Items.Add(timeframe);
             var selectedIndex = Array.IndexOf(TimeframeOptions, _selectedTimeframe); if (selectedIndex < 0) selectedIndex = 0; combo.SelectedIndex = selectedIndex;
