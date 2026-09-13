@@ -33,6 +33,12 @@ public sealed class ChartController
     private Point dragStartPixel;
     private double priceScaleStartY;
 
+    private ScottPlot.Plottables.CandlestickPlot? candlePlot;
+    private ScottPlot.Color? themeAxisText;
+    private ScottPlot.Color? themeCandleUp;
+    private ScottPlot.Color? themeCandleDown;
+    private ScottPlot.Color? themeCrosshair;
+
     public ChartController(
         ScottPlot.WPF.WpfPlot chart,
         Action<Candle?>? candleChanged = null)
@@ -56,6 +62,59 @@ public sealed class ChartController
         chart.MouseLeave += Chart_MouseLeave;
 
         Rebuild("EURUSD", 15);
+    }
+
+    /// <summary>
+    /// Applies theme colors (from the current WPF ResourceDictionary) to the chart itself:
+    /// axis text/ticks, candle up/down colors, and the crosshair. Safe to call any time,
+    /// including after Rebuild, since the colors are cached and re-applied on every Rebuild
+    /// automatically (see ConfigureAxes/AddCandlesticks/CreateCrosshair).
+    /// </summary>
+    public void ApplyTheme(
+        System.Windows.Media.Color axisText,
+        System.Windows.Media.Color candleUp,
+        System.Windows.Media.Color candleDown,
+        System.Windows.Media.Color crosshairColor)
+    {
+        themeAxisText = ToScottPlotColor(axisText);
+        themeCandleUp = ToScottPlotColor(candleUp);
+        themeCandleDown = ToScottPlotColor(candleDown);
+        themeCrosshair = ToScottPlotColor(crosshairColor);
+
+        ApplyAxisTheme();
+        ApplyCandleTheme();
+        ApplyCrosshairTheme();
+        chart.Refresh();
+    }
+
+    private static ScottPlot.Color ToScottPlotColor(System.Windows.Media.Color c) =>
+        ScottPlot.Color.FromARGB((uint)((c.A << 24) | (c.R << 16) | (c.G << 8) | c.B));
+
+    private void ApplyAxisTheme()
+    {
+        var color = themeAxisText ?? ScottPlot.Colors.White;
+        chart.Plot.Axes.Bottom.TickLabelStyle.ForeColor = color;
+        chart.Plot.Axes.Bottom.MajorTickStyle.Color = color;
+        chart.Plot.Axes.Bottom.MinorTickStyle.Color = color;
+        chart.Plot.Axes.Bottom.FrameLineStyle.Color = color;
+        chart.Plot.Axes.Right.TickLabelStyle.ForeColor = color;
+    }
+
+    private void ApplyCandleTheme()
+    {
+        if (candlePlot == null)
+            return;
+
+        candlePlot.RisingColor = themeCandleUp ?? ScottPlot.Color.FromHex("#4CAF50");
+        candlePlot.FallingColor = themeCandleDown ?? ScottPlot.Color.FromHex("#EF5350");
+    }
+
+    private void ApplyCrosshairTheme()
+    {
+        if (crosshair == null)
+            return;
+
+        crosshair.LineColor = themeCrosshair ?? ScottPlot.Color.FromHex("#B0B0B0");
     }
 
     public IReadOnlyList<Candle> Candles => candles;
@@ -113,9 +172,10 @@ public sealed class ChartController
                 TimeSpan.FromMinutes(candleMinutes)))
             .ToList();
 
-        var candlePlot = chart.Plot.Add.Candlestick(data);
+        candlePlot = chart.Plot.Add.Candlestick(data);
         candlePlot.Axes.YAxis = chart.Plot.Axes.Right;
         candlePlot.Sequential = false;
+        ApplyCandleTheme();
     }
 
     private void ConfigureAxes()
@@ -127,11 +187,9 @@ public sealed class ChartController
         chart.Plot.Axes.Right.MinimumSize = 65;
         chart.Plot.Axes.Bottom.MinimumSize = 35;
 
-        // Bottom time axis: keep labels and ticks readable on the dark chart theme.
-        chart.Plot.Axes.Bottom.TickLabelStyle.ForeColor = ScottPlot.Colors.White;
-        chart.Plot.Axes.Bottom.MajorTickStyle.Color = ScottPlot.Colors.White;
-        chart.Plot.Axes.Bottom.MinorTickStyle.Color = ScottPlot.Colors.White;
-        chart.Plot.Axes.Bottom.FrameLineStyle.Color = ScottPlot.Colors.White;
+        // Axis colors come from the current theme (see ApplyTheme); falls back to white
+        // until MainWindow applies the real theme for the first time.
+        ApplyAxisTheme();
     }
 
     private void ConfigureGrid()
@@ -147,6 +205,7 @@ public sealed class ChartController
         crosshair.HorizontalLine.LinePattern = ScottPlot.LinePattern.Dotted;
         crosshair.VerticalLine.LinePattern = ScottPlot.LinePattern.Dotted;
         crosshair.IsVisible = false;
+        ApplyCrosshairTheme();
     }
 
     private void Chart_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

@@ -530,6 +530,9 @@ public partial class MainWindow : Window
         var backgroundBrush = TryFindResource("Color.App.Background") as System.Windows.Media.SolidColorBrush;
         var gridBrush = TryFindResource("Color.Chart.Grid") as System.Windows.Media.SolidColorBrush;
         var textBrush = TryFindResource("Color.Chart.Text") as System.Windows.Media.SolidColorBrush;
+        var candleUpBrush = TryFindResource("Color.Chart.CandleUp") as System.Windows.Media.SolidColorBrush;
+        var candleDownBrush = TryFindResource("Color.Chart.CandleDown") as System.Windows.Media.SolidColorBrush;
+        var crosshairBrush = TryFindResource("Color.Chart.Crosshair") as System.Windows.Media.SolidColorBrush;
 
         if (backgroundBrush != null)
         {
@@ -554,16 +557,14 @@ public partial class MainWindow : Window
             Chart.Plot.Grid.MajorLineWidth = 1;
         }
 
-        if (textBrush != null)
-        {
-            var textColor = ScottPlot.Color.FromARGB(
-                textBrush.Color.A << 24 |
-                textBrush.Color.R << 16 |
-                textBrush.Color.G << 8 |
-                textBrush.Color.B);
-            Chart.Plot.Axes.Right.TickLabelStyle.ForeColor = textColor;
-            Chart.Plot.Axes.Bottom.TickLabelStyle.ForeColor = textColor;
-        }
+        // Axis text, candle up/down, and crosshair colors are owned by ChartController so
+        // they get re-applied automatically on every Rebuild (timeframe/symbol change) too -
+        // previously these reset to hardcoded/default colors after every Rebuild.
+        chartController.ApplyTheme(
+            axisText: (textBrush ?? System.Windows.Media.Brushes.White).Color,
+            candleUp: (candleUpBrush ?? System.Windows.Media.Brushes.LimeGreen).Color,
+            candleDown: (candleDownBrush ?? System.Windows.Media.Brushes.OrangeRed).Color,
+            crosshairColor: (crosshairBrush ?? System.Windows.Media.Brushes.Gray).Color);
 
         Chart.Refresh();
     }

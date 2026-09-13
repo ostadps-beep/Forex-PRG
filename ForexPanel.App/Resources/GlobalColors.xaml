@@ -1,52 +1,15 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="Color.App.Background" Color="#181A1F"/>
-    <SolidColorBrush x:Key="Color.App.Foreground" Color="#E0E0E0"/>
-
-    <SolidColorBrush x:Key="Color.App.TitleBar" Color="#15171B"/>
-    <SolidColorBrush x:Key="Color.App.TitleBarHover" Color="#252930"/>
-    <SolidColorBrush x:Key="Color.App.TitleBarPressed" Color="#30353E"/>
-    <SolidColorBrush x:Key="Color.App.TitleBarButtonForeground" Color="#D8DCE2"/>
-    <SolidColorBrush x:Key="Color.App.TitleBarCloseHover" Color="#C42B2B"/>
-    <SolidColorBrush x:Key="Color.App.TitleBarClosePressed" Color="#A52222"/>
-
-    <SolidColorBrush x:Key="Color.Toolbar.Background" Color="#20232A"/>
-    <SolidColorBrush x:Key="Color.Toolbar.Border" Color="#3C414A"/>
-    <SolidColorBrush x:Key="Color.Toolbar.GroupBackground" Color="#292D35"/>
-    <SolidColorBrush x:Key="Color.Toolbar.GroupBorder" Color="#4A505A"/>
-    <SolidColorBrush x:Key="Color.Toolbar.Icon" Color="#D8DCE2"/>
-    <SolidColorBrush x:Key="Color.Toolbar.IconLight" Color="#F0F2F5"/>
-    <SolidColorBrush x:Key="Color.Toolbar.ButtonHover" Color="#30353E"/>
-    <SolidColorBrush x:Key="Color.Toolbar.ButtonHoverBorder" Color="#525A66"/>
-    <SolidColorBrush x:Key="Color.Toolbar.ButtonPressed" Color="#3B424D"/>
-    <SolidColorBrush x:Key="Color.Toolbar.ButtonPressedBorder" Color="#697381"/>
-    <SolidColorBrush x:Key="Color.Toolbar.CollapseButton" Color="#2E3946"/>
-    <SolidColorBrush x:Key="Color.Toolbar.CollapseButtonHover" Color="#3A4A5D"/>
-    <SolidColorBrush x:Key="Color.Toolbar.CollapseButtonPressed" Color="#465B72"/>
-    <SolidColorBrush x:Key="Color.Toolbar.CollapseButtonBorder" Color="#60758C"/>
-    <SolidColorBrush x:Key="Color.Toolbar.CollapseButtonIcon" Color="#DCE8F5"/>
-
-    <SolidColorBrush x:Key="Color.Chart.Background" Color="#101216"/>
-    <SolidColorBrush x:Key="Color.Chart.Border" Color="#40454E"/>
-    <SolidColorBrush x:Key="Color.Chart.Grid" Color="#30343B"/>
-    <SolidColorBrush x:Key="Color.Chart.Axis" Color="#8A909B"/>
-    <SolidColorBrush x:Key="Color.Chart.Text" Color="#E0E0E0"/>
-    <SolidColorBrush x:Key="Color.Chart.Crosshair" Color="#B0B0B0"/>
-    <SolidColorBrush x:Key="Color.Chart.CandleUp" Color="#4CAF50"/>
-    <SolidColorBrush x:Key="Color.Chart.CandleDown" Color="#EF5350"/>
-    <SolidColorBrush x:Key="Color.Chart.WickUp" Color="#4CAF50"/>
-    <SolidColorBrush x:Key="Color.Chart.WickDown" Color="#EF5350"/>
-    <SolidColorBrush x:Key="Color.Chart.Volume" Color="#607D8B"/>
-
-    <SolidColorBrush x:Key="Color.Panel.Background" Color="#20232A"/>
-    <SolidColorBrush x:Key="Color.Panel.Border" Color="#4A505A"/>
-    <SolidColorBrush x:Key="Color.Panel.Text" Color="#F0F0F0"/>
-
-    <SolidColorBrush x:Key="Color.Control.Background" Color="#292D35"/>
-    <SolidColorBrush x:Key="Color.Control.Border" Color="#505762"/>
-    <SolidColorBrush x:Key="Color.Control.Foreground" Color="#E0E0E0"/>
-    <SolidColorBrush x:Key="Color.Control.Disabled" Color="#777E89"/>
-    <SolidColorBrush x:Key="Color.Control.Hover" Color="#30353E"/>
-    <SolidColorBrush x:Key="Color.Control.Pressed" Color="#3B424D"/>
-    <SolidColorBrush x:Key="Color.Control.Selection" Color="#465B72"/>
+    <!--
+      This dictionary used to duplicate every color key from Theme/DarkTheme.xaml with its own
+      hardcoded values, which had already drifted out of sync in at least one place
+      (Color.Chart.Grid differed between the two files). It is merged in App.xaml as a
+      startup fallback, before ThemeManager.Apply() runs in MainWindow's constructor and
+      replaces these with the real Light/Dark/System theme. To avoid two sources of truth for
+      the same colors, it now simply merges DarkTheme.xaml as that fallback instead of
+      redefining the colors itself. See docs/STATUS_CHECKLIST.md item 28.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/ForexPanel.App;component/Theme/DarkTheme.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

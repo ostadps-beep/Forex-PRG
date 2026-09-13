@@ -49,6 +49,11 @@
   <SolidColorBrush x:Key="Menu.Static.Foreground" Color="#E0E0E0"/>
   <SolidColorBrush x:Key="Menu.Static.Separator" Color="#4A505A"/>
   <SolidColorBrush x:Key="Menu.Disabled.Foreground" Color="#777E89"/>
+  <ControlTemplate x:Key="{ComponentResourceKey TypeInTargetAssembly={x:Type FrameworkElement}, ResourceId=SubmenuContent}" TargetType="ContentControl">
+    <Border Background="{DynamicResource Menu.Static.Background}" BorderBrush="{DynamicResource Menu.Static.Border}" BorderThickness="1">
+      <ContentPresenter/>
+    </Border>
+  </ControlTemplate>
   <SolidColorBrush x:Key="MenuItem.Selected.Background" Color="#465B72"/>
   <SolidColorBrush x:Key="MenuItem.Selected.Border" Color="#60758C"/>
   <SolidColorBrush x:Key="MenuItem.Highlight.Background" Color="#30353E"/>
