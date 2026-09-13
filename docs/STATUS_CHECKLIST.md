@@ -20,7 +20,7 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 3. Reset View
    Baseline claim: confirmed working
-   Status: BROKEN - does not work (contradicts baseline doc's "confirmed" claim)
+   Status: FIXED (needs PS verification) - was actually not implemented at all: the "Reset" toolbar tool was registered in the toolbar UI but had zero click handling, so clicking it did nothing (confirmed by code review - no matching branch existed). Implemented from scratch (commit 1019dbd): restores default bar spacing/right-offset on the time axis (via ApplyInitialCandleViewport) and auto-scales the price axis to whatever candles end up visible (new ChartController.ResetPriceScaleToVisibleRange(), which fits only the on-screen candles with padding, unlike ScottPlot's own AutoScale which fits ALL data regardless of the current view). PLEASE VERIFY: zoom/pan/scroll around, then click Reset - view should return to a sensible default showing recent candles with a reasonable price range.
 
 4. Timeframe (M1/M5/M15/M30/H1/H4/D1)
    Baseline claim: confirmed working, first-class Toolbar Tool
@@ -28,11 +28,11 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 5. AutoScroll
    Baseline claim: confirmed working
-   Status: PARTIAL - toolbar icon is disabled/inactive; works only via right-click, but reverts to an initial state with candles bunched/compressed together
+   Status: FIXED (needs PS verification) - was actually not implemented at all: the "AutoScroll" toolbar tool had zero click handling (confirmed by code review). Implemented from scratch (commit 1019dbd) as a toggle: when turned ON, immediately snaps/pins the view to the latest candle (right-offset reset to 0). Note: there is no live data feed yet to continuously re-anchor to as new bars arrive (that's separate, later work per the candle-engine scope decision) - so this delivers the "jump to and stay pinned on latest" behavior that's testable right now, not continuous live tracking. PLEASE VERIFY: pan/scroll away from the latest candle, then click AutoScroll - it should jump back to show the most recent candle and toggle-highlight correctly.
 
 6. ChartShift
    Baseline claim: confirmed working
-   Status: BROKEN - does not work (contradicts baseline doc's "confirmed" claim)
+   Status: FIXED (needs PS verification) - was actually not implemented at all: the "ChartShift" toolbar tool had zero click handling (confirmed by code review). Implemented from scratch (commit 1019dbd) as a toggle: when ON, adds MT4-style blank space after the last candle (15% of the visible span) instead of pinning the last candle to the chart's right edge; toggling OFF removes it again. Known minor approximation noted in code comments: bar-spacing recalculated immediately after toggling while zoomed may be very slightly off, since the visible span briefly includes the blank margin - not a functional break. PLEASE VERIFY: click ChartShift - a visible gap should appear after the last candle; click again to remove it; also check it stays correctly highlighted/un-highlighted across theme switches.
 
 7. Grid (toolbar execution)
    Baseline claim: works, currently frozen - do not modify while frozen
