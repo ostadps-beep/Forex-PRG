@@ -66,10 +66,10 @@ public sealed partial class ChartSettingsWindow : Window
 
         sidebar = new ListBox
         {
-            Background = TryFindResource("Color.Toolbar.Background") as Brush ?? Brushes.Transparent,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(4)
         };
+        sidebar.SetResourceReference(Control.BackgroundProperty, "Color.Toolbar.Background");
         foreach (var category in Categories)
             sidebar.Items.Add(category.Title);
         sidebar.SelectionChanged += Sidebar_SelectionChanged;
@@ -457,23 +457,25 @@ public sealed partial class ChartSettingsWindow : Window
             StaysOpen = false
         };
 
-        var popupPanel = new StackPanel
-        {
-            Background = Brushes.White,
-            Width = 220
-        };
+        var popupPanel = new StackPanel { Width = 220 };
+        popupPanel.SetResourceReference(Panel.BackgroundProperty, "Color.Toolbar.GroupBackground");
+
         var border = new Border
         {
             Child = popupPanel,
-            BorderBrush = Brushes.Gray,
             BorderThickness = new Thickness(1),
-            Background = Brushes.WhiteSmoke,
             Padding = new Thickness(10)
         };
+        border.SetResourceReference(Border.BackgroundProperty, "Color.Toolbar.GroupBackground");
+        border.SetResourceReference(Border.BorderBrushProperty, "Color.Toolbar.Border");
         popup.Child = border;
+
+        var hexLabel = new TextBlock { Text = "Hex color", Margin = new Thickness(0, 0, 0, 4) };
+        hexLabel.SetResourceReference(TextBlock.ForegroundProperty, "Color.App.Foreground");
 
         var hexBox = new TextBox { Text = ColorToHex(setting.BaseColor), Margin = new Thickness(0, 0, 0, 8) };
         var shadeLabel = new TextBlock { Text = $"Shade: {setting.ShadePercent:0}%", Margin = new Thickness(0, 0, 0, 4) };
+        shadeLabel.SetResourceReference(TextBlock.ForegroundProperty, "Color.App.Foreground");
         var shadeSlider = new Slider { Minimum = 0, Maximum = 200, Value = setting.ShadePercent };
 
         void Refresh()
@@ -502,7 +504,7 @@ public sealed partial class ChartSettingsWindow : Window
             Refresh();
         };
 
-        popupPanel.Children.Add(new TextBlock { Text = "Hex color", Margin = new Thickness(0, 0, 0, 4) });
+        popupPanel.Children.Add(hexLabel);
         popupPanel.Children.Add(hexBox);
         popupPanel.Children.Add(shadeLabel);
         popupPanel.Children.Add(shadeSlider);
