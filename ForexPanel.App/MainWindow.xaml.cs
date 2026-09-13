@@ -26,6 +26,9 @@ public partial class MainWindow : Window
     private int candleMinutes = 15;
     private string currentSymbol = "EURUSD";
     private bool crosshairEnabled;
+    private bool autoScrollEnabled;
+    private bool chartShiftEnabled;
+    private const double ChartShiftFraction = 0.15; // MT4-style blank space after the last candle, as a fraction of the visible span
     private bool candleLayoutInitialized;
 
     private bool zoomAreaMode;
@@ -120,9 +123,21 @@ public partial class MainWindow : Window
     {
         var intervalDays = candleMinutes / (24.0 * 60.0);
         var spanDays = candleLayoutModel.VisibleBars * intervalDays;
-        var left = right - spanDays;
 
-        Chart.Plot.Axes.SetLimitsX(left, right);
+        // Chart Shift (MT4-style): when enabled, leaves blank space after the last candle
+        // instead of pinning it to the very edge of the chart. `right` here is always the
+        // "true" data-anchored right edge (latest candle or current scroll position) - the
+        // shift is applied only for display, not fed back into SyncCandleLayoutFromChart's
+        // own math (a known minor approximation: bar-spacing recalculated right after toggling
+        // Chart Shift while zoomed may be very slightly off, since the visible span then
+        // includes the blank margin - acceptable for now, not a functional break).
+        var displayRight = chartShiftEnabled
+            ? right + spanDays * ChartShiftFraction
+            : right;
+
+        var left = displayRight - spanDays;
+
+        Chart.Plot.Axes.SetLimitsX(left, displayRight);
         Chart.Refresh();
     }
 
@@ -212,6 +227,55 @@ public partial class MainWindow : Window
             button.Background = crosshairEnabled && activeBackground != null ? activeBackground : Brushes.Transparent;
             button.BorderBrush = crosshairEnabled && activeBorder != null ? activeBorder : Brushes.Transparent;
             ApplyCrosshairVisibility();
+            return;
+        }
+
+        if (string.Equals(tool.Id, "Reset", StringComparison.Ordinal))
+        {
+            // Reset View: restore default bar spacing/right-offset (time axis) and
+            // auto-scale the price axis to whatever ends up visible - mirrors MT4's Reset.
+            CancelZoomAreaMode();
+            ApplyInitialCandleViewport();
+            chartController.ResetPriceScaleToVisibleRange();
+            return;
+        }
+
+        if (string.Equals(tool.Id, "AutoScroll", StringComparison.Ordinal))
+        {
+            autoScrollEnabled = !autoScrollEnabled;
+            var autoScrollBackground = TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
+            var autoScrollBorder = TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
+            button.Background = autoScrollEnabled && autoScrollBackground != null ? autoScrollBackground : Brushes.Transparent;
+            button.BorderBrush = autoScrollEnabled && autoScrollBorder != null ? autoScrollBorder : Brushes.Transparent;
+
+            if (autoScrollEnabled)
+            {
+                // Snap immediately to the latest bar. There's no live feed yet to keep
+                // re-anchoring to as new bars arrive (that's a separate, later step), but this
+                // toggle at least does the meaningful, testable part right now: jump to and
+                // pin the view on the most recent candle.
+                candleLayoutModel.SetRightOffset(0);
+                ApplyCandleLayoutToChart(DateTime.Now.ToOADate());
+            }
+            return;
+        }
+
+        if (string.Equals(tool.Id, "ChartShift", StringComparison.Ordinal))
+        {
+            SyncCandleLayoutFromChart();
+            var limits = Chart.Plot.Axes.GetLimits();
+            var trueRight = chartShiftEnabled
+                ? limits.Right - (candleLayoutModel.VisibleBars * (candleMinutes / (24.0 * 60.0)) * ChartShiftFraction)
+                : limits.Right;
+
+            chartShiftEnabled = !chartShiftEnabled;
+
+            var chartShiftBackground = TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
+            var chartShiftBorder = TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
+            button.Background = chartShiftEnabled && chartShiftBackground != null ? chartShiftBackground : Brushes.Transparent;
+            button.BorderBrush = chartShiftEnabled && chartShiftBorder != null ? chartShiftBorder : Brushes.Transparent;
+
+            ApplyCandleLayoutToChart(trueRight);
             return;
         }
 
@@ -457,6 +521,8 @@ public partial class MainWindow : Window
 
         ApplyToggleButtonVisual("Crosshair", crosshairEnabled, activeBackground, activeBorder);
         ApplyToggleButtonVisual("Grid", chartController.GridEnabled, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("AutoScroll", autoScrollEnabled, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("ChartShift", chartShiftEnabled, activeBackground, activeBorder);
     }
 
     private void ApplyToggleButtonVisual(string toolId, bool isActive, Brush? activeBackground, Brush? activeBorder)

@@ -125,6 +125,44 @@ public sealed class ChartController
         crosshair.LineColor = themeCrosshair ?? ScottPlot.Color.FromHex("#B0B0B0");
     }
 
+    /// <summary>
+    /// Auto-scales the price (Y) axis to fit only the candles currently visible within the
+    /// chart's current X-axis (time) range, with a small padding margin - used by the
+    /// "Reset View" toolbar tool. Unlike ScottPlot's own AutoScaleY(), which fits ALL plotted
+    /// data regardless of the current time window, this only considers what's actually on
+    /// screen, matching MT4's Reset View behavior.
+    /// </summary>
+    public void ResetPriceScaleToVisibleRange()
+    {
+        var limits = chart.Plot.Axes.GetLimits(chart.Plot.Axes.Bottom, chart.Plot.Axes.Right);
+
+        List<Candle> visible = candles
+            .Where(c =>
+            {
+                double t = c.Time.ToOADate();
+                return t >= limits.Left && t <= limits.Right;
+            })
+            .ToList();
+
+        if (visible.Count == 0)
+            visible = candles;
+
+        if (visible.Count == 0)
+            return;
+
+        double minLow = visible.Min(c => c.Low);
+        double maxHigh = visible.Max(c => c.High);
+        double half = (maxHigh - minLow) / 2.0 * 1.1;
+        double center = (maxHigh + minLow) / 2.0;
+
+        if (half <= 0)
+            half = Math.Abs(center) * 0.01 + 0.0001;
+
+        chart.Plot.Axes.SetLimitsY(center - half, center + half, chart.Plot.Axes.Right);
+        priceScaleBaseHalf = half;
+        chart.Refresh();
+    }
+
     public IReadOnlyList<Candle> Candles => candles;
 
     public bool GridEnabled => gridEnabled;
