@@ -54,6 +54,7 @@ public partial class MainWindow : Window
         Chart.Menu = new StyledChartMenu(Chart);
         FixChartContextMenuAutoscale();
         ApplyChartSurfaceTheme();
+        RefreshChartTypeToolbarHighlight();
 
         MainToolbar.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler(MainToolbar_ButtonClick));
         Chart.MouseMove += MainWindow_ChartMouseMove;
@@ -262,6 +263,24 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (tool.Id.StartsWith("ChartType.", StringComparison.Ordinal))
+        {
+            var type = tool.Id switch
+            {
+                "ChartType.Candlestick" => ForexPanel.App.Settings.ChartTypeOption.Candlestick,
+                "ChartType.HollowCandlestick" => ForexPanel.App.Settings.ChartTypeOption.HollowCandlestick,
+                "ChartType.Bar" => ForexPanel.App.Settings.ChartTypeOption.Bar,
+                "ChartType.Line" => ForexPanel.App.Settings.ChartTypeOption.Line,
+                "ChartType.Area" => ForexPanel.App.Settings.ChartTypeOption.Area,
+                _ => ForexPanel.App.Settings.ChartTypeOption.Candlestick
+            };
+
+            chartSettings.General.ChartType = type;
+            chartController.ApplyChartSettings(chartSettings);
+            RefreshChartTypeToolbarHighlight();
+            return;
+        }
+
         if (string.Equals(tool.Id, "Cursor", StringComparison.Ordinal))
         {
             // Cursor = standard/neutral pointer mode. If another exclusive mode (Crosshair)
@@ -335,7 +354,11 @@ public partial class MainWindow : Window
         {
             var window = new ForexPanel.App.Settings.ChartSettingsWindow(
                 chartSettings,
-                () => chartController.ApplyChartSettings(chartSettings))
+                () =>
+                {
+                    chartController.ApplyChartSettings(chartSettings);
+                    RefreshChartTypeToolbarHighlight();
+                })
             {
                 Owner = this
             };
@@ -587,6 +610,31 @@ public partial class MainWindow : Window
         ApplyToggleButtonVisual("Grid", chartController.GridEnabled, activeBackground, activeBorder);
         ApplyToggleButtonVisual("AutoScroll", autoScrollEnabled, activeBackground, activeBorder);
         ApplyToggleButtonVisual("ChartShift", chartShiftEnabled, activeBackground, activeBorder);
+        RefreshChartTypeToolbarHighlight(activeBackground, activeBorder);
+    }
+
+    /// <summary>
+    /// Highlights whichever ChartType.* toolbar button matches the current chart type and
+    /// un-highlights the other four - these five act like a radio group even though the
+    /// toolbar model itself has no built-in mutual-exclusivity mechanism.
+    /// </summary>
+    private void RefreshChartTypeToolbarHighlight(Brush? activeBackground = null, Brush? activeBorder = null)
+    {
+        activeBackground ??= TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
+        activeBorder ??= TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
+
+        string[] allIds = { "ChartType.Candlestick", "ChartType.HollowCandlestick", "ChartType.Bar", "ChartType.Line", "ChartType.Area" };
+        string activeId = chartController.CurrentChartType switch
+        {
+            ForexPanel.App.Settings.ChartTypeOption.HollowCandlestick => "ChartType.HollowCandlestick",
+            ForexPanel.App.Settings.ChartTypeOption.Bar => "ChartType.Bar",
+            ForexPanel.App.Settings.ChartTypeOption.Line => "ChartType.Line",
+            ForexPanel.App.Settings.ChartTypeOption.Area => "ChartType.Area",
+            _ => "ChartType.Candlestick"
+        };
+
+        foreach (var id in allIds)
+            ApplyToggleButtonVisual(id, id == activeId, activeBackground, activeBorder);
     }
 
     private void ApplyToggleButtonVisual(string toolId, bool isActive, Brush? activeBackground, Brush? activeBorder)

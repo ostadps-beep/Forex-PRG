@@ -168,12 +168,12 @@ public sealed partial class ChartSettingsWindow : Window
         var s = live.General;
 
         panel.Children.Add(Row("Chart Type", ComboBoxFor(
-            new[] { ChartTypeOption.Candlestick, ChartTypeOption.Line, ChartTypeOption.Histogram, ChartTypeOption.Combined },
+            new[] { ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Bar, ChartTypeOption.Line, ChartTypeOption.Area, ChartTypeOption.Histogram, ChartTypeOption.Combined },
             s.ChartType,
             v => v.ToString(),
             v => { s.ChartType = v; NotifyChanged(); },
-            enabledValues: new[] { ChartTypeOption.Candlestick },
-            disabledTooltip: "Only Candlestick rendering exists in this project so far.")));
+            enabledValues: new[] { ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Bar, ChartTypeOption.Line, ChartTypeOption.Area },
+            disabledTooltip: "Not implemented yet.")));
 
         panel.Children.Add(Row("Visible Candles", NumericBox(s.VisibleCandles, v => { s.VisibleCandles = (int)v; NotifyChanged(); }, isEnabled: false,
             tooltip: "Reserved - the chart currently auto-sizes to the available window.")));
@@ -250,6 +250,10 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Body Thickness", SliderFor(0.1, 1.0, s.BodyThickness, v => { s.BodyThickness = v; NotifyChanged(); })));
         panel.Children.Add(Row("Show Wicks", CheckBoxFor(s.ShowWicks, v => { s.ShowWicks = v; NotifyChanged(); })));
         panel.Children.Add(Row("Show Body", CheckBoxFor(s.ShowBody, v => { s.ShowBody = v; NotifyChanged(); })));
+
+        panel.Children.Add(SectionHeader("Hollow Candles (used when Chart Type = Hollow Candlestick)"));
+        panel.Children.Add(Row("Hollow Up Color", ColorPickerFor(s.HollowUpColor, NotifyChanged)));
+        panel.Children.Add(Row("Hollow Down Color", ColorPickerFor(s.HollowDownColor, NotifyChanged)));
 
         return panel;
     }
