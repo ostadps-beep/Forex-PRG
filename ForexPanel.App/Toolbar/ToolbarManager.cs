@@ -8,7 +8,7 @@ namespace ForexPanel.App.Toolbar
 {
     public sealed class ToolbarManager
     {
-        private const int LayoutVersion = 4;
+        private const int LayoutVersion = 5;
         private readonly string _layoutPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ForexPanel", "toolbar-layout.json");
         private readonly Dictionary<string, ToolbarTool> _catalog = new();
         public List<ToolbarGroup> Groups { get; } = new();
@@ -30,6 +30,12 @@ namespace ForexPanel.App.Toolbar
             var chart = AddGroup("Chart", "Chart", 30, 0);
             AddTool(chart, "AutoScroll", "Auto Scroll", "Icon.AutoScroll", 10, true);
             AddTool(chart, "ChartShift", "Chart Shift", "Icon.ChartShift", 20, true);
+            var chartType = AddGroup("ChartType", "Chart Type", 35, 0);
+            AddTool(chartType, "ChartType.Candlestick", "Candlestick", "Icon.ChartCandlestick", 10, true);
+            AddTool(chartType, "ChartType.HollowCandlestick", "Hollow Candles", "Icon.ChartHollowCandlestick", 20, true);
+            AddTool(chartType, "ChartType.Bar", "Bar", "Icon.ChartBar", 30, true);
+            AddTool(chartType, "ChartType.Line", "Line", "Icon.ChartLine", 40, true);
+            AddTool(chartType, "ChartType.Area", "Area", "Icon.ChartArea", 50, true);
             var display = AddGroup("Display", "Display", 10, 1);
             AddTool(display, "Grid", "Grid", "Icon.Grid", 10, true);
             AddTool(display, "Volume", "Volume", "Icon.Volume", 20, true);

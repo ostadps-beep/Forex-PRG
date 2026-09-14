@@ -16,6 +16,16 @@ public sealed class ConfigurableCandlestickPlot : CandlestickPlot
     public bool ShowWicks { get; set; } = true;
     public bool ShowBody { get; set; } = true;
 
+    /// <summary>
+    /// When true, candle bodies are drawn as an outline only (not filled) - the classic
+    /// "Hollow Candles" chart style. Uses its own dedicated colors (HollowRisingStyle/
+    /// HollowFallingStyle) rather than reusing RisingLineStyle/FallingLineStyle (the wick
+    /// color), per PS's explicit request for a separate color setting for this style.
+    /// </summary>
+    public bool HollowBody { get; set; }
+    public LineStyle HollowRisingStyle { get; } = new() { Color = Color.FromHex("#4CAF50"), Width = 1.5f };
+    public LineStyle HollowFallingStyle { get; } = new() { Color = Color.FromHex("#EF5350"), Width = 1.5f };
+
     public ConfigurableCandlestickPlot(IOHLCSource data) : base(data)
     {
     }
@@ -73,10 +83,19 @@ public sealed class ConfigurableCandlestickPlot : CandlestickPlot
             PixelRangeY yPxRange = new(Math.Min(yPxOpen, yPxClose), Math.Max(yPxOpen, yPxClose));
             PixelRect rect = new(xPxRange, yPxRange);
 
-            if (yPxOpen != yPxClose)
+            if (HollowBody)
+            {
+                LineStyle hollowStyle = isRising ? HollowRisingStyle : HollowFallingStyle;
+                Drawing.DrawRectangle(rp.Canvas, rect, rp.Paint, hollowStyle);
+            }
+            else if (yPxOpen != yPxClose)
+            {
                 fillStyle.Render(rp.Canvas, rect, rp.Paint);
+            }
             else
+            {
                 lineStyle.Render(rp.Canvas, rect.BottomLine, rp.Paint);
+            }
         }
     }
 }

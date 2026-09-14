@@ -211,6 +211,25 @@ public sealed class ChartController
             candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
             candlePlot.ShowWicks = candleSettings.ShowWicks;
             candlePlot.ShowBody = candleSettings.ShowBody;
+            candlePlot.HollowRisingStyle.Color = ToScottPlotColor(candleSettings.HollowUpColor.Effective);
+            candlePlot.HollowFallingStyle.Color = ToScottPlotColor(candleSettings.HollowDownColor.Effective);
+        }
+
+        if (currentChartType != chartSettings.General.ChartType)
+        {
+            currentChartType = chartSettings.General.ChartType;
+            AddPriceSeries();
+            // Re-apply candle-specific colors/flags again since AddPriceSeries may have just
+            // created a brand-new candlePlot instance.
+            if (candlePlot != null)
+            {
+                candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
+                candlePlot.ShowWicks = candleSettings.ShowWicks;
+                candlePlot.ShowBody = candleSettings.ShowBody;
+                candlePlot.HollowRisingStyle.Color = ToScottPlotColor(candleSettings.HollowUpColor.Effective);
+                candlePlot.HollowFallingStyle.Color = ToScottPlotColor(candleSettings.HollowDownColor.Effective);
+                ApplyCandleTheme();
+            }
         }
 
         var gridSettings = chartSettings.GridAndBackground;
@@ -258,7 +277,7 @@ public sealed class ChartController
             ? resampled.Skip(resampled.Count - CandleCount).ToList()
             : resampled;
 
-        AddCandlesticks();
+        AddPriceSeries();
         ConfigureAxes();
         ConfigureGrid();
         CreateCrosshair();
@@ -289,24 +308,103 @@ public sealed class ChartController
         return generated;
     }
 
-    private void AddCandlesticks()
-    {
-        List<ScottPlot.OHLC> data = candles
-            .Select(c => new ScottPlot.OHLC(
-                c.Open,
-                c.High,
-                c.Low,
-                c.Close,
-                c.Time,
-                TimeSpan.FromMinutes(candleMinutes)))
-            .ToList();
+    private ForexPanel.App.Settings.ChartTypeOption currentChartType = ForexPanel.App.Settings.ChartTypeOption.Candlestick;
+    public ForexPanel.App.Settings.ChartTypeOption CurrentChartType => currentChartType;
+    private ScottPlot.IPlottable? priceSeriesPlottable;
+    private ScottPlot.Plottables.OhlcPlot? ohlcPlot;
 
-        var dataSource = new ScottPlot.DataSources.OHLCSourceList(data);
-        candlePlot = new ConfigurableCandlestickPlot(dataSource);
+    /// <summary>
+    /// Switches the chart-type toolbar/settings selection to a new rendering mode, reusing the
+    /// already-loaded candle data (no re-fetch/resample needed) so the current view/zoom stays put.
+    /// </summary>
+    public void SetChartType(ForexPanel.App.Settings.ChartTypeOption type)
+    {
+        currentChartType = type;
+        AddPriceSeries();
+        ApplyChartSettingsToChart();
+        chart.Refresh();
+    }
+
+    private void AddPriceSeries()
+    {
+        if (priceSeriesPlottable != null)
+        {
+            chart.Plot.PlottableList.Remove(priceSeriesPlottable);
+            priceSeriesPlottable = null;
+        }
+        candlePlot = null;
+        ohlcPlot = null;
+
+        switch (currentChartType)
+        {
+            case ForexPanel.App.Settings.ChartTypeOption.Bar:
+                AddBarPlot();
+                break;
+            case ForexPanel.App.Settings.ChartTypeOption.Line:
+                AddLinePlot();
+                break;
+            case ForexPanel.App.Settings.ChartTypeOption.Area:
+                AddAreaPlot();
+                break;
+            case ForexPanel.App.Settings.ChartTypeOption.HollowCandlestick:
+                AddCandlesticks(hollow: true);
+                break;
+            default:
+                AddCandlesticks(hollow: false);
+                break;
+        }
+    }
+
+    private List<ScottPlot.OHLC> BuildOhlcData() => candles
+        .Select(c => new ScottPlot.OHLC(
+            c.Open,
+            c.High,
+            c.Low,
+            c.Close,
+            c.Time,
+            TimeSpan.FromMinutes(candleMinutes)))
+        .ToList();
+
+    private void AddCandlesticks(bool hollow)
+    {
+        var dataSource = new ScottPlot.DataSources.OHLCSourceList(BuildOhlcData());
+        candlePlot = new ConfigurableCandlestickPlot(dataSource) { HollowBody = hollow };
         chart.Plot.PlottableList.Add(candlePlot);
         candlePlot.Axes.YAxis = chart.Plot.Axes.Right;
         candlePlot.Sequential = false;
+        priceSeriesPlottable = candlePlot;
         ApplyCandleTheme();
+    }
+
+    private void AddBarPlot()
+    {
+        var dataSource = new ScottPlot.DataSources.OHLCSourceList(BuildOhlcData());
+        ohlcPlot = new ScottPlot.Plottables.OhlcPlot(dataSource) { Sequential = false };
+        chart.Plot.PlottableList.Add(ohlcPlot);
+        ohlcPlot.Axes.YAxis = chart.Plot.Axes.Right;
+        priceSeriesPlottable = ohlcPlot;
+    }
+
+    private void AddLinePlot()
+    {
+        double[] xs = candles.Select(c => c.Time.ToOADate()).ToArray();
+        double[] ys = candles.Select(c => c.Close).ToArray();
+        var scatter = chart.Plot.Add.Scatter(xs, ys);
+        scatter.Axes.YAxis = chart.Plot.Axes.Right;
+        scatter.MarkerSize = 0;
+        scatter.LineWidth = 1.5f;
+        priceSeriesPlottable = scatter;
+    }
+
+    private void AddAreaPlot()
+    {
+        double[] xs = candles.Select(c => c.Time.ToOADate()).ToArray();
+        double[] ys = candles.Select(c => c.Close).ToArray();
+        double baseline = candles.Count > 0 ? candles.Min(c => c.Low) : 0.0;
+        double[] baselineArray = Enumerable.Repeat(baseline, ys.Length).ToArray();
+        var fill = chart.Plot.Add.FillY(xs, ys, baselineArray);
+        fill.Axes.YAxis = chart.Plot.Axes.Right;
+        priceSeriesPlottable = fill;
     }
 
     private void ConfigureAxes()

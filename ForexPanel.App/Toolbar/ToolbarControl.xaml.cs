@@ -158,7 +158,10 @@ namespace ForexPanel.App.Toolbar
             }
             else
             {
-                var path = new System.Windows.Shapes.Path(); path.SetResourceReference(System.Windows.Shapes.Path.DataProperty, tool.IconKey); path.SetResourceReference(FrameworkElement.StyleProperty, "ToolbarIconStyle"); button.Content = path;
+                var path = new System.Windows.Shapes.Path(); path.SetResourceReference(System.Windows.Shapes.Path.DataProperty, tool.IconKey); path.SetResourceReference(FrameworkElement.StyleProperty, "ToolbarIconStyle");
+                if (tool.IconKey is "Icon.ChartCandlestick" or "Icon.ChartArea")
+                    path.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Color.Toolbar.Icon");
+                button.Content = path;
             }
             return button;
         }
