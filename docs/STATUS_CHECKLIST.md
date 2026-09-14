@@ -148,6 +148,10 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
     PS initially found Show Wicks/Show Body only worked one-way (turning off worked, turning back on had no visual effect) - turned out to be a stale build cache, not a code bug. PS CONFIRMED WORKING after a clean `dotnet clean` + rebuild (2026-09-13).
 ------------------------------------------------------------
 
+30. Chart Type toolbar icons (Candlestick/Bar/Line/Area)
+    Baseline claim: (not covered in baseline doc - gap identified 2026-09-14)
+    Status: NOT STARTED - no toolbar icon buttons for switching chart type exist in this project at all (unlike the sibling ForexAnalysis project, which has 4 such buttons). Currently only a disabled "Chart Type" dropdown exists inside Chart Settings > Chart tab (Candlestick is the only working option there too). Only candlestick rendering (ConfigurableCandlestickPlot) exists in the actual rendering pipeline - Bar/Line/Area modes would need real new rendering logic built from scratch, not just new icons/buttons.
+
 ## How to use this file
 1. Run the app: dotnet run --project .\ForexPanel.App\ForexPanel.App.csproj
 2. Go through each numbered item, replace UNTESTED with OK / PARTIAL / BROKEN.
