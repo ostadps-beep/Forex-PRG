@@ -26,8 +26,6 @@ public partial class MainWindow : Window
     private int candleMinutes = 15;
     private string currentSymbol = "EURUSD";
     private bool crosshairEnabled;
-    private bool autoScrollEnabled;
-    private bool chartShiftEnabled;
     private const double ChartShiftFraction = 0.15; // MT4-style blank space after the last candle, as a fraction of the visible span
     private readonly ForexPanel.App.Settings.ChartSettings chartSettings = ForexPanel.App.Settings.ChartSettings.CreateDefault();
     private bool candleLayoutInitialized;
@@ -175,7 +173,7 @@ public partial class MainWindow : Window
         // own math (a known minor approximation: bar-spacing recalculated right after toggling
         // Chart Shift while zoomed may be very slightly off, since the visible span then
         // includes the blank margin - acceptable for now, not a functional break).
-        var displayRight = chartShiftEnabled
+        var displayRight = chartSettings.General.ChartShiftEnabled
             ? right + spanDays * ChartShiftFraction
             : right;
 
@@ -313,13 +311,13 @@ public partial class MainWindow : Window
 
         if (string.Equals(tool.Id, "AutoScroll", StringComparison.Ordinal))
         {
-            autoScrollEnabled = !autoScrollEnabled;
+            chartSettings.General.AutoScrollEnabled = !chartSettings.General.AutoScrollEnabled;
             var autoScrollBackground = TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
             var autoScrollBorder = TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
-            button.Background = autoScrollEnabled && autoScrollBackground != null ? autoScrollBackground : Brushes.Transparent;
-            button.BorderBrush = autoScrollEnabled && autoScrollBorder != null ? autoScrollBorder : Brushes.Transparent;
+            button.Background = chartSettings.General.AutoScrollEnabled && autoScrollBackground != null ? autoScrollBackground : Brushes.Transparent;
+            button.BorderBrush = chartSettings.General.AutoScrollEnabled && autoScrollBorder != null ? autoScrollBorder : Brushes.Transparent;
 
-            if (autoScrollEnabled)
+            if (chartSettings.General.AutoScrollEnabled)
             {
                 // Snap immediately to the latest bar. There's no live feed yet to keep
                 // re-anchoring to as new bars arrive (that's a separate, later step), but this
@@ -335,16 +333,16 @@ public partial class MainWindow : Window
         {
             SyncCandleLayoutFromChart();
             var limits = Chart.Plot.Axes.GetLimits();
-            var trueRight = chartShiftEnabled
+            var trueRight = chartSettings.General.ChartShiftEnabled
                 ? limits.Right - (candleLayoutModel.VisibleBars * (candleMinutes / (24.0 * 60.0)) * ChartShiftFraction)
                 : limits.Right;
 
-            chartShiftEnabled = !chartShiftEnabled;
+            chartSettings.General.ChartShiftEnabled = !chartSettings.General.ChartShiftEnabled;
 
             var chartShiftBackground = TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
             var chartShiftBorder = TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
-            button.Background = chartShiftEnabled && chartShiftBackground != null ? chartShiftBackground : Brushes.Transparent;
-            button.BorderBrush = chartShiftEnabled && chartShiftBorder != null ? chartShiftBorder : Brushes.Transparent;
+            button.Background = chartSettings.General.ChartShiftEnabled && chartShiftBackground != null ? chartShiftBackground : Brushes.Transparent;
+            button.BorderBrush = chartSettings.General.ChartShiftEnabled && chartShiftBorder != null ? chartShiftBorder : Brushes.Transparent;
 
             ApplyCandleLayoutToChart(trueRight);
             return;
@@ -608,8 +606,8 @@ public partial class MainWindow : Window
 
         ApplyToggleButtonVisual("Crosshair", crosshairEnabled, activeBackground, activeBorder);
         ApplyToggleButtonVisual("Grid", chartController.GridEnabled, activeBackground, activeBorder);
-        ApplyToggleButtonVisual("AutoScroll", autoScrollEnabled, activeBackground, activeBorder);
-        ApplyToggleButtonVisual("ChartShift", chartShiftEnabled, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("AutoScroll", chartSettings.General.AutoScrollEnabled, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("ChartShift", chartSettings.General.ChartShiftEnabled, activeBackground, activeBorder);
         RefreshChartTypeToolbarHighlight(activeBackground, activeBorder);
     }
 

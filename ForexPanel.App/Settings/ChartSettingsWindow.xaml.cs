@@ -164,29 +164,70 @@ public sealed partial class ChartSettingsWindow : Window
     // ---------- Chart ----------
     private UIElement BuildChartPanel()
     {
-        var panel = new StackPanel();
+        var root = new StackPanel();
         var s = live.General;
 
-        panel.Children.Add(Row("Chart Type", ComboBoxFor(
-            new[] { ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Bar, ChartTypeOption.Line, ChartTypeOption.Area, ChartTypeOption.Histogram, ChartTypeOption.Combined },
+        // Two-column layout matching MT4's own "Common" properties tab, per PS's reference images.
+        var columns = new Grid();
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
+        columns.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var left = new StackPanel();
+        var right = new StackPanel();
+        Grid.SetColumn(left, 0);
+        Grid.SetColumn(right, 2);
+        columns.Children.Add(left);
+        columns.Children.Add(right);
+        root.Children.Add(columns);
+
+        left.Children.Add(PlainCheckBox("Offline chart", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented - no offline data mode exists in this project."));
+        left.Children.Add(PlainCheckBox("Chart on foreground", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented."));
+        left.Children.Add(PlainCheckBox("Chart shift", s.ChartShiftEnabled, v => { s.ChartShiftEnabled = v; NotifyChanged(); }));
+        left.Children.Add(PlainCheckBox("Chart autoscroll", s.AutoScrollEnabled, v => { s.AutoScrollEnabled = v; NotifyChanged(); }));
+
+        left.Children.Add(SectionHeader(" "));
+        left.Children.Add(PlainCheckBox("Scale fix one to one", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet."));
+        left.Children.Add(PlainCheckBox("Scale fix", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet."));
+
+        right.Children.Add(RadioGroupFor(
+            new[] { ChartTypeOption.Bar, ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Line, ChartTypeOption.Area },
             s.ChartType,
-            v => v.ToString(),
-            v => { s.ChartType = v; NotifyChanged(); },
-            enabledValues: new[] { ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Bar, ChartTypeOption.Line, ChartTypeOption.Area },
-            disabledTooltip: "Not implemented yet.")));
+            v => v switch
+            {
+                ChartTypeOption.Bar => "Bar chart",
+                ChartTypeOption.Candlestick => "Candlesticks",
+                ChartTypeOption.HollowCandlestick => "Hollow candlesticks",
+                ChartTypeOption.Line => "Line chart",
+                ChartTypeOption.Area => "Area chart",
+                _ => v.ToString()
+            },
+            v => { s.ChartType = v; NotifyChanged(); }));
 
-        panel.Children.Add(Row("Visible Candles", NumericBox(s.VisibleCandles, v => { s.VisibleCandles = (int)v; NotifyChanged(); }, isEnabled: false,
-            tooltip: "Reserved - the chart currently auto-sizes to the available window.")));
+        right.Children.Add(SectionHeader(" "));
+        right.Children.Add(PlainCheckBox("Show OHLC", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet."));
+        right.Children.Add(PlainCheckBox("Show Ask line", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet - no ask price feed exists."));
+        right.Children.Add(PlainCheckBox("Show period separators", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet."));
+        right.Children.Add(PlainCheckBox("Show grid", live.GridAndBackground.ShowGrid, v => { live.GridAndBackground.ShowGrid = v; NotifyChanged(); }));
+        right.Children.Add(PlainCheckBox("Show volumes", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet - no volume data exists."));
+        right.Children.Add(PlainCheckBox("Show object descriptions", false, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet."));
 
-        panel.Children.Add(Row("Auto Fit", CheckBoxFor(s.AutoFit, v => { s.AutoFit = v; NotifyChanged(); })));
-
-        panel.Children.Add(Row("Zoom Behavior", ComboBoxFor(
+        root.Children.Add(SectionHeader("Additional Behavior"));
+        root.Children.Add(Row("Zoom Behavior", ComboBoxFor(
             new[] { ZoomAxisOption.TimeAxis, ZoomAxisOption.PriceAxis, ZoomAxisOption.Both },
             s.ZoomBehavior,
             v => v.ToString(),
             v => { s.ZoomBehavior = v; NotifyChanged(); })));
-
-        panel.Children.Add(Row("Mouse Wheel", ComboBoxFor(
+        root.Children.Add(Row("Mouse Wheel", ComboBoxFor(
             new[] { MouseWheelOption.Pan, MouseWheelOption.Zoom },
             s.MouseWheelBehavior,
             v => v.ToString(),
@@ -194,9 +235,40 @@ public sealed partial class ChartSettingsWindow : Window
             enabledValues: new[] { MouseWheelOption.Pan },
             disabledTooltip: "Zoom-on-wheel would conflict with this project's verified MT4-standard input (wheel=pan, +/-=zoom). Left as a placeholder for now.")));
 
-        panel.Children.Add(SectionHeader("Line / Area Chart Type Colors"));
-        panel.Children.Add(Row("Line Color", ColorPickerFor(s.LineColor, NotifyChanged)));
-        panel.Children.Add(Row("Area Color", ColorPickerFor(s.AreaColor, NotifyChanged)));
+        root.Children.Add(SectionHeader("Line / Area Chart Type Colors"));
+        root.Children.Add(Row("Line Color", ColorPickerFor(s.LineColor, NotifyChanged)));
+        root.Children.Add(Row("Area Color", ColorPickerFor(s.AreaColor, NotifyChanged)));
+
+        return root;
+    }
+
+    private static CheckBox PlainCheckBox(string label, bool initial, Action<bool> onChanged, bool isEnabled = true, string? tooltip = null)
+    {
+        var box = new CheckBox { Content = label, IsChecked = initial, IsEnabled = isEnabled, Margin = new Thickness(0, 4, 0, 4) };
+        if (tooltip != null)
+            box.ToolTip = tooltip;
+        box.Checked += (_, _) => onChanged(true);
+        box.Unchecked += (_, _) => onChanged(false);
+        return box;
+    }
+
+    private static UIElement RadioGroupFor<T>(IReadOnlyList<T> values, T initial, Func<T, string> label, Action<T> onChanged) where T : notnull
+    {
+        var panel = new StackPanel();
+        string groupName = "RadioGroup_" + Guid.NewGuid().ToString("N");
+
+        foreach (var value in values)
+        {
+            var radio = new RadioButton
+            {
+                Content = label(value),
+                GroupName = groupName,
+                IsChecked = EqualityComparer<T>.Default.Equals(value, initial),
+                Margin = new Thickness(0, 4, 0, 4)
+            };
+            radio.Checked += (_, _) => onChanged(value);
+            panel.Children.Add(radio);
+        }
 
         return panel;
     }
@@ -446,8 +518,8 @@ public sealed partial class ChartSettingsWindow : Window
     {
         var swatch = new Border
         {
-            Width = 28,
-            Height = 20,
+            Width = 20,
+            Height = 14,
             BorderThickness = new Thickness(1),
             BorderBrush = Brushes.Gray,
             Background = new SolidColorBrush(setting.Effective)

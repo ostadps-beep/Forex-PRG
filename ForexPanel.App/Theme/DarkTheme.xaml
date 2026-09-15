@@ -114,6 +114,37 @@
       </Trigger>
     </Style.Triggers>
   </Style>
+
+  <Style TargetType="Slider">
+    <Setter Property="Height" Value="20"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Slider">
+          <Grid VerticalAlignment="Center">
+            <Border Height="2" Background="{DynamicResource Color.Control.Border}" VerticalAlignment="Center" CornerRadius="1"/>
+            <Track x:Name="PART_Track">
+              <Track.DecreaseRepeatButton>
+                <RepeatButton Command="Slider.DecreaseLarge" Background="Transparent" BorderThickness="0" Opacity="0"/>
+              </Track.DecreaseRepeatButton>
+              <Track.IncreaseRepeatButton>
+                <RepeatButton Command="Slider.IncreaseLarge" Background="Transparent" BorderThickness="0" Opacity="0"/>
+              </Track.IncreaseRepeatButton>
+              <Track.Thumb>
+                <Thumb Width="12" Height="12">
+                  <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                      <Ellipse Width="12" Height="12" Fill="{DynamicResource Color.Control.Foreground}"/>
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </Track.Thumb>
+            </Track>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
   <Style TargetType="ComboBoxItem">
     <Setter Property="Background" Value="{DynamicResource Color.Control.Background}"/>
     <Setter Property="Foreground" Value="{DynamicResource Color.Control.Foreground}"/>
