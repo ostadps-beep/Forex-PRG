@@ -38,8 +38,16 @@ public sealed class ChartGeneralSettings
     public bool AutoFit { get; set; } = true;
     public ZoomAxisOption ZoomBehavior { get; set; } = ZoomAxisOption.Both;
     public MouseWheelOption MouseWheelBehavior { get; set; } = MouseWheelOption.Pan; // MT4-standard default - do not silently change
+    public ColorSetting LineColor { get; set; } = ColorSetting.From(Color.FromRgb(0x21, 0x96, 0xF3));
+    public ColorSetting AreaColor { get; set; } = ColorSetting.From(Color.FromArgb(60, 0x21, 0x96, 0xF3)); // common pale/translucent blue
 
-    public ChartGeneralSettings Clone() => (ChartGeneralSettings)MemberwiseClone();
+    public ChartGeneralSettings Clone()
+    {
+        var clone = (ChartGeneralSettings)MemberwiseClone();
+        clone.LineColor = LineColor.Clone();
+        clone.AreaColor = AreaColor.Clone();
+        return clone;
+    }
 }
 
 public sealed class AxesSettings
@@ -72,6 +80,8 @@ public sealed class CandleSettings
     public ColorSetting HollowUpColor { get; set; } = ColorSetting.From(Color.FromRgb(0x4C, 0xAF, 0x50));
     public ColorSetting HollowDownColor { get; set; } = ColorSetting.From(Color.FromRgb(0xEF, 0x53, 0x50));
     public double BodyThickness { get; set; } = 0.8; // fraction of the candle's time slot (ScottPlot convention)
+    public double WickThickness { get; set; } = 1.0; // pixel width of the regular candle's wick line
+    public double HollowThickness { get; set; } = 1.5; // pixel width of the hollow candle's outline
     public bool ShowWicks { get; set; } = true;
     public bool ShowBody { get; set; } = true;
 

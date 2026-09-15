@@ -205,31 +205,21 @@ public sealed class ChartController
         themeCandleUp = ToScottPlotColor(candleSettings.BullishColor.Effective);
         themeCandleDown = ToScottPlotColor(candleSettings.BearishColor.Effective);
         ApplyCandleTheme();
-
-        if (candlePlot != null)
-        {
-            candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
-            candlePlot.ShowWicks = candleSettings.ShowWicks;
-            candlePlot.ShowBody = candleSettings.ShowBody;
-            candlePlot.HollowRisingStyle.Color = ToScottPlotColor(candleSettings.HollowUpColor.Effective);
-            candlePlot.HollowFallingStyle.Color = ToScottPlotColor(candleSettings.HollowDownColor.Effective);
-        }
+        ApplyCandlePlotSettings(candleSettings);
 
         if (currentChartType != chartSettings.General.ChartType)
         {
             currentChartType = chartSettings.General.ChartType;
             AddPriceSeries();
-            // Re-apply candle-specific colors/flags again since AddPriceSeries may have just
+            // Re-apply candle-specific settings again since AddPriceSeries may have just
             // created a brand-new candlePlot instance.
-            if (candlePlot != null)
-            {
-                candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
-                candlePlot.ShowWicks = candleSettings.ShowWicks;
-                candlePlot.ShowBody = candleSettings.ShowBody;
-                candlePlot.HollowRisingStyle.Color = ToScottPlotColor(candleSettings.HollowUpColor.Effective);
-                candlePlot.HollowFallingStyle.Color = ToScottPlotColor(candleSettings.HollowDownColor.Effective);
-                ApplyCandleTheme();
-            }
+            ApplyCandleTheme();
+            ApplyCandlePlotSettings(candleSettings);
+            ApplyLineAndAreaColors(chartSettings.General);
+        }
+        else
+        {
+            ApplyLineAndAreaColors(chartSettings.General);
         }
 
         var gridSettings = chartSettings.GridAndBackground;
@@ -257,6 +247,34 @@ public sealed class ChartController
         // independently toggleable via IGrid's own XAxisStyle/YAxisStyle (both public).
         chart.Plot.Grid.YAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowHorizontalGrid;
         chart.Plot.Grid.XAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowVerticalGrid;
+    }
+
+    private void ApplyCandlePlotSettings(ForexPanel.App.Settings.CandleSettings candleSettings)
+    {
+        if (candlePlot == null)
+            return;
+
+        candlePlot.SymbolWidth = Math.Clamp(candleSettings.BodyThickness, 0.1, 1.0);
+        candlePlot.ShowWicks = candleSettings.ShowWicks;
+        candlePlot.ShowBody = candleSettings.ShowBody;
+        candlePlot.RisingLineStyle.Width = (float)candleSettings.WickThickness;
+        candlePlot.FallingLineStyle.Width = (float)candleSettings.WickThickness;
+        candlePlot.HollowRisingStyle.Color = ToScottPlotColor(candleSettings.HollowUpColor.Effective);
+        candlePlot.HollowFallingStyle.Color = ToScottPlotColor(candleSettings.HollowDownColor.Effective);
+        candlePlot.HollowRisingStyle.Width = (float)candleSettings.HollowThickness;
+        candlePlot.HollowFallingStyle.Width = (float)candleSettings.HollowThickness;
+    }
+
+    private void ApplyLineAndAreaColors(ForexPanel.App.Settings.ChartGeneralSettings generalSettings)
+    {
+        if (priceSeriesPlottable is ScottPlot.Plottables.Scatter scatter)
+        {
+            scatter.Color = ToScottPlotColor(generalSettings.LineColor.Effective);
+        }
+        else if (priceSeriesPlottable is ScottPlot.Plottables.FillY fill)
+        {
+            fill.FillStyle.Color = ToScottPlotColor(generalSettings.AreaColor.Effective);
+        }
     }
 
     public void Rebuild(string symbol, int timeframeMinutes)

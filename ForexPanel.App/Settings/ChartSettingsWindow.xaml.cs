@@ -194,6 +194,10 @@ public sealed partial class ChartSettingsWindow : Window
             enabledValues: new[] { MouseWheelOption.Pan },
             disabledTooltip: "Zoom-on-wheel would conflict with this project's verified MT4-standard input (wheel=pan, +/-=zoom). Left as a placeholder for now.")));
 
+        panel.Children.Add(SectionHeader("Line / Area Chart Type Colors"));
+        panel.Children.Add(Row("Line Color", ColorPickerFor(s.LineColor, NotifyChanged)));
+        panel.Children.Add(Row("Area Color", ColorPickerFor(s.AreaColor, NotifyChanged)));
+
         return panel;
     }
 
@@ -248,12 +252,14 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Bullish Color", ColorPickerFor(s.BullishColor, NotifyChanged)));
         panel.Children.Add(Row("Bearish Color", ColorPickerFor(s.BearishColor, NotifyChanged)));
         panel.Children.Add(Row("Body Thickness", SliderFor(0.1, 1.0, s.BodyThickness, v => { s.BodyThickness = v; NotifyChanged(); })));
+        panel.Children.Add(Row("Wick Thickness", SliderFor(0.5, 4.0, s.WickThickness, v => { s.WickThickness = v; NotifyChanged(); })));
         panel.Children.Add(Row("Show Wicks", CheckBoxFor(s.ShowWicks, v => { s.ShowWicks = v; NotifyChanged(); })));
         panel.Children.Add(Row("Show Body", CheckBoxFor(s.ShowBody, v => { s.ShowBody = v; NotifyChanged(); })));
 
         panel.Children.Add(SectionHeader("Hollow Candles (used when Chart Type = Hollow Candlestick)"));
         panel.Children.Add(Row("Hollow Up Color", ColorPickerFor(s.HollowUpColor, NotifyChanged)));
         panel.Children.Add(Row("Hollow Down Color", ColorPickerFor(s.HollowDownColor, NotifyChanged)));
+        panel.Children.Add(Row("Hollow Thickness", SliderFor(0.5, 4.0, s.HollowThickness, v => { s.HollowThickness = v; NotifyChanged(); })));
 
         return panel;
     }

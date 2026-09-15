@@ -65,11 +65,26 @@ public sealed class ConfigurableCandlestickPlot : CandlestickPlot
 
             float yPxOpen = Axes.GetPixelY(ohlc.Open);
             float yPxClose = Axes.GetPixelY(ohlc.Close);
+            float bodyTop = Math.Min(yPxOpen, yPxClose);
+            float bodyBottom = Math.Max(yPxOpen, yPxClose);
 
             if (ShowWicks)
             {
-                PixelLine verticalLine = new(center, top, center, bottom);
-                Drawing.DrawLine(rp.Canvas, rp.Paint, verticalLine, lineStyle);
+                if (HollowBody && ShowBody)
+                {
+                    // Hollow candles have no fill, so a single top-to-bottom wick line would
+                    // visibly cut straight through the empty interior of the body outline.
+                    // Draw only the two segments outside the body instead (above and below it).
+                    if (bodyTop > top)
+                        Drawing.DrawLine(rp.Canvas, rp.Paint, new PixelLine(center, top, center, bodyTop), isRising ? HollowRisingStyle : HollowFallingStyle);
+                    if (bottom > bodyBottom)
+                        Drawing.DrawLine(rp.Canvas, rp.Paint, new PixelLine(center, bodyBottom, center, bottom), isRising ? HollowRisingStyle : HollowFallingStyle);
+                }
+                else
+                {
+                    PixelLine verticalLine = new(center, top, center, bottom);
+                    Drawing.DrawLine(rp.Canvas, rp.Paint, verticalLine, lineStyle);
+                }
             }
 
             if (!ShowBody)
@@ -80,7 +95,7 @@ public sealed class ConfigurableCandlestickPlot : CandlestickPlot
                 continue;
 
             PixelRangeX xPxRange = new(xPxLeft, xPxRight);
-            PixelRangeY yPxRange = new(Math.Min(yPxOpen, yPxClose), Math.Max(yPxOpen, yPxClose));
+            PixelRangeY yPxRange = new(bodyTop, bodyBottom);
             PixelRect rect = new(xPxRange, yPxRange);
 
             if (HollowBody)

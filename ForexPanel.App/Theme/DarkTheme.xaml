@@ -93,6 +93,17 @@
     <Setter Property="Background" Value="{DynamicResource Color.Control.Background}"/>
     <Setter Property="Foreground" Value="{DynamicResource Color.Control.Foreground}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Color.Control.Border}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="6,3"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
     <Style.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
         <Setter Property="Background" Value="{DynamicResource Color.Control.Hover}"/>
