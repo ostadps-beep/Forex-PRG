@@ -193,6 +193,10 @@ public sealed partial class ChartSettingsWindow : Window
             tooltip: "Not implemented yet."));
         left.Children.Add(PlainCheckBox("Scale fix", false, _ => { }, isEnabled: false,
             tooltip: "Not implemented yet."));
+        left.Children.Add(Row("Fixed maximum", NumericBox(0, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet - requires Scale fix.")));
+        left.Children.Add(Row("Fixed minimum", NumericBox(0, _ => { }, isEnabled: false,
+            tooltip: "Not implemented yet - requires Scale fix.")));
 
         right.Children.Add(RadioGroupFor(
             new[] { ChartTypeOption.Bar, ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Line, ChartTypeOption.Area },
@@ -332,6 +336,10 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Hollow Up Color", ColorPickerFor(s.HollowUpColor, NotifyChanged)));
         panel.Children.Add(Row("Hollow Down Color", ColorPickerFor(s.HollowDownColor, NotifyChanged)));
         panel.Children.Add(Row("Hollow Thickness", SliderFor(0.5, 4.0, s.HollowThickness, v => { s.HollowThickness = v; NotifyChanged(); })));
+
+        panel.Children.Add(SectionHeader("Bar Chart (used when Chart Type = Bar)"));
+        panel.Children.Add(Row("Bar Up Color", ColorPickerFor(s.BarUpColor, NotifyChanged)));
+        panel.Children.Add(Row("Bar Down Color", ColorPickerFor(s.BarDownColor, NotifyChanged)));
 
         return panel;
     }

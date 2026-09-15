@@ -81,6 +81,8 @@ public sealed class CandleSettings
     public ColorSetting BearishColor { get; set; } = ColorSetting.From(Color.FromRgb(0xEF, 0x53, 0x50));
     public ColorSetting HollowUpColor { get; set; } = ColorSetting.From(Color.FromRgb(0x4C, 0xAF, 0x50));
     public ColorSetting HollowDownColor { get; set; } = ColorSetting.From(Color.FromRgb(0xEF, 0x53, 0x50));
+    public ColorSetting BarUpColor { get; set; } = ColorSetting.From(Color.FromRgb(0x00, 0x80, 0x80)); // teal, matching PS's MT4 reference default
+    public ColorSetting BarDownColor { get; set; } = ColorSetting.From(Color.FromRgb(0x80, 0x00, 0x00)); // maroon, matching PS's MT4 reference default
     public double BodyThickness { get; set; } = 0.8; // fraction of the candle's time slot (ScottPlot convention)
     public double WickThickness { get; set; } = 1.0; // pixel width of the regular candle's wick line
     public double HollowThickness { get; set; } = 1.5; // pixel width of the hollow candle's outline
@@ -94,6 +96,8 @@ public sealed class CandleSettings
         clone.BearishColor = BearishColor.Clone();
         clone.HollowUpColor = HollowUpColor.Clone();
         clone.HollowDownColor = HollowDownColor.Clone();
+        clone.BarUpColor = BarUpColor.Clone();
+        clone.BarDownColor = BarDownColor.Clone();
         return clone;
     }
 }

@@ -251,6 +251,12 @@ public sealed class ChartController
 
     private void ApplyCandlePlotSettings(ForexPanel.App.Settings.CandleSettings candleSettings)
     {
+        if (ohlcPlot != null)
+        {
+            ohlcPlot.RisingStyle.Color = ToScottPlotColor(candleSettings.BarUpColor.Effective);
+            ohlcPlot.FallingStyle.Color = ToScottPlotColor(candleSettings.BarDownColor.Effective);
+        }
+
         if (candlePlot == null)
             return;
 
