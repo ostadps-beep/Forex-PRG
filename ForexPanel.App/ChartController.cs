@@ -34,6 +34,7 @@ public sealed class ChartController
     private double priceScaleStartY;
 
     private ConfigurableCandlestickPlot? candlePlot;
+    private ScottPlot.Plottables.HorizontalLine? lastPriceLine;
     private ScottPlot.Color? themeAxisText;
     private ScottPlot.Color? themeCandleUp;
     private ScottPlot.Color? themeCandleDown;
@@ -243,10 +244,55 @@ public sealed class ChartController
         chart.Plot.Axes.Bottom.FrameLineStyle.Width = (float)axesSettings.AxisThickness;
         chart.Plot.Axes.Right.FrameLineStyle.Width = (float)axesSettings.AxisThickness;
 
+        if (chart.Plot.Axes.Right.TickGenerator is ScottPlot.TickGenerators.NumericAutomatic priceTickGen)
+        {
+            int decimals = Math.Clamp(axesSettings.DecimalPlaces, 0, 8);
+            priceTickGen.LabelFormatter = v => v.ToString("F" + decimals, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        if (chart.Plot.Axes.Bottom.TickGenerator is ScottPlot.TickGenerators.DateTimeAutomatic timeTickGen)
+        {
+            timeTickGen.LabelFormatter = axesSettings.TimeFormat switch
+            {
+                ForexPanel.App.Settings.TimeFormatOption.Date => dt => dt.ToString("yyyy-MM-dd"),
+                ForexPanel.App.Settings.TimeFormatOption.Combined => dt => dt.ToString("MM-dd HH:mm"),
+                _ => dt => dt.ToString("HH:mm")
+            };
+        }
+
+        ApplyLastPriceLine(axesSettings);
+
         // Horizontal grid lines are drawn from the Y axis's ticks, vertical from the X axis's -
         // independently toggleable via IGrid's own XAxisStyle/YAxisStyle (both public).
         chart.Plot.Grid.YAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowHorizontalGrid;
         chart.Plot.Grid.XAxisStyle.IsVisible = gridSettings.ShowGrid && axesSettings.ShowVerticalGrid;
+    }
+
+    private void ApplyLastPriceLine(ForexPanel.App.Settings.AxesSettings axesSettings)
+    {
+        if (!axesSettings.ShowLastPrice || candles.Count == 0)
+        {
+            if (lastPriceLine != null)
+                lastPriceLine.IsVisible = false;
+            return;
+        }
+
+        double lastClose = candles[^1].Close;
+
+        if (lastPriceLine == null)
+        {
+            lastPriceLine = chart.Plot.Add.HorizontalLine(lastClose);
+            lastPriceLine.EnableAutoscale = false;
+            lastPriceLine.LinePattern = ScottPlot.LinePattern.Dashed;
+            lastPriceLine.LineWidth = 1;
+        }
+
+        lastPriceLine.IsVisible = true;
+        lastPriceLine.Y = lastClose;
+        lastPriceLine.LineColor = themeAxisText ?? ScottPlot.Colors.White;
+        lastPriceLine.LabelStyle.IsVisible = true;
+        lastPriceLine.LabelStyle.Text = lastClose.ToString("F" + Math.Clamp(axesSettings.DecimalPlaces, 0, 8), System.Globalization.CultureInfo.InvariantCulture);
+        lastPriceLine.LabelStyle.ForeColor = themeAxisText ?? ScottPlot.Colors.White;
     }
 
     private void ApplyCandlePlotSettings(ForexPanel.App.Settings.CandleSettings candleSettings)
@@ -295,6 +341,7 @@ public sealed class ChartController
             chart.ReleaseMouseCapture();
 
         chart.Plot.Clear();
+        lastPriceLine = null;
 
         List<Candle> baseline = GetOrCreateBaseline(symbol);
         List<Candle> resampled = CandleResampler.Resample(baseline, candleMinutes);

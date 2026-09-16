@@ -297,10 +297,8 @@ public sealed partial class ChartSettingsWindow : Window
             v => { s.PricePosition = v; NotifyChanged(); },
             enabledValues: new[] { AxisPositionOption.Right },
             disabledTooltip: "The current chart renderer always docks the price axis on the right.")));
-        panel.Children.Add(Row("Show Last Price", CheckBoxFor(s.ShowLastPrice, v => { s.ShowLastPrice = v; NotifyChanged(); }, isEnabled: false,
-            tooltip: "Reserved - no last-price marker exists on the axis yet.")));
-        panel.Children.Add(Row("Decimal Places", NumericBox(s.DecimalPlaces, v => { s.DecimalPlaces = (int)v; NotifyChanged(); }, isEnabled: false,
-            tooltip: "Reserved - price labels use ScottPlot's automatic formatting for now.")));
+        panel.Children.Add(Row("Show Last Price", CheckBoxFor(s.ShowLastPrice, v => { s.ShowLastPrice = v; NotifyChanged(); })));
+        panel.Children.Add(Row("Decimal Places", NumericBox(s.DecimalPlaces, v => { s.DecimalPlaces = (int)v; NotifyChanged(); })));
         panel.Children.Add(Row("Axis Color", ColorPickerFor(s.AxisColor, NotifyChanged)));
         panel.Children.Add(Row("Axis Thickness", SliderFor(0.5, 3.0, s.AxisThickness, v => { s.AxisThickness = v; NotifyChanged(); })));
 
@@ -316,9 +314,7 @@ public sealed partial class ChartSettingsWindow : Window
             new[] { TimeFormatOption.HhMm, TimeFormatOption.Date, TimeFormatOption.Combined },
             s.TimeFormat,
             v => v.ToString(),
-            v => { s.TimeFormat = v; NotifyChanged(); },
-            enabledValues: new[] { TimeFormatOption.HhMm },
-            disabledTooltip: "Reserved - the time axis currently always shows ScottPlot's automatic date/time labels.")));
+            v => { s.TimeFormat = v; NotifyChanged(); })));
 
         return panel;
     }
