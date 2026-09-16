@@ -58,6 +58,8 @@ public sealed class AxesSettings
     // Price axis
     public AxisPositionOption PricePosition { get; set; } = AxisPositionOption.Right; // matches current fixed layout
     public bool ShowLastPrice { get; set; } = true;
+    public ColorSetting LastPriceLineColor { get; set; } = ColorSetting.From(Color.FromRgb(0xFF, 0xC1, 0x07));
+    public LineStyleOption LastPriceLineStyle { get; set; } = LineStyleOption.Dash;
     public bool ShowHorizontalGrid { get; set; } = true;
     public int DecimalPlaces { get; set; } = 5;
     public ColorSetting AxisColor { get; set; } = ColorSetting.From(Colors.White);
@@ -72,6 +74,7 @@ public sealed class AxesSettings
     {
         var clone = (AxesSettings)MemberwiseClone();
         clone.AxisColor = AxisColor.Clone();
+        clone.LastPriceLineColor = LastPriceLineColor.Clone();
         return clone;
     }
 }

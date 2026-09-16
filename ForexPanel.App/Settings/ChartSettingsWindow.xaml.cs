@@ -298,6 +298,12 @@ public sealed partial class ChartSettingsWindow : Window
             enabledValues: new[] { AxisPositionOption.Right },
             disabledTooltip: "The current chart renderer always docks the price axis on the right.")));
         panel.Children.Add(Row("Show Last Price", CheckBoxFor(s.ShowLastPrice, v => { s.ShowLastPrice = v; NotifyChanged(); })));
+        panel.Children.Add(Row("Last Price Color", ColorPickerFor(s.LastPriceLineColor, NotifyChanged)));
+        panel.Children.Add(Row("Last Price Line Style", ComboBoxFor(
+            new[] { LineStyleOption.Solid, LineStyleOption.Dash, LineStyleOption.Dot },
+            s.LastPriceLineStyle,
+            v => v.ToString(),
+            v => { s.LastPriceLineStyle = v; NotifyChanged(); })));
         panel.Children.Add(Row("Decimal Places", NumericBox(s.DecimalPlaces, v => { s.DecimalPlaces = (int)v; NotifyChanged(); })));
         panel.Children.Add(Row("Axis Color", ColorPickerFor(s.AxisColor, NotifyChanged)));
         panel.Children.Add(Row("Axis Thickness", SliderFor(0.5, 3.0, s.AxisThickness, v => { s.AxisThickness = v; NotifyChanged(); })));

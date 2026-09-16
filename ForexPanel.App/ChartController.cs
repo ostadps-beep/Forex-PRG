@@ -283,16 +283,22 @@ public sealed class ChartController
         {
             lastPriceLine = chart.Plot.Add.HorizontalLine(lastClose);
             lastPriceLine.EnableAutoscale = false;
-            lastPriceLine.LinePattern = ScottPlot.LinePattern.Dashed;
             lastPriceLine.LineWidth = 1;
         }
 
+        var lineColor = ToScottPlotColor(axesSettings.LastPriceLineColor.Effective);
         lastPriceLine.IsVisible = true;
         lastPriceLine.Y = lastClose;
-        lastPriceLine.LineColor = themeAxisText ?? ScottPlot.Colors.White;
+        lastPriceLine.LineColor = lineColor;
+        lastPriceLine.LinePattern = axesSettings.LastPriceLineStyle switch
+        {
+            ForexPanel.App.Settings.LineStyleOption.Dot => ScottPlot.LinePattern.Dotted,
+            ForexPanel.App.Settings.LineStyleOption.Solid => ScottPlot.LinePattern.Solid,
+            _ => ScottPlot.LinePattern.Dashed
+        };
         lastPriceLine.LabelStyle.IsVisible = true;
         lastPriceLine.LabelStyle.Text = lastClose.ToString("F" + Math.Clamp(axesSettings.DecimalPlaces, 0, 8), System.Globalization.CultureInfo.InvariantCulture);
-        lastPriceLine.LabelStyle.ForeColor = themeAxisText ?? ScottPlot.Colors.White;
+        lastPriceLine.LabelStyle.ForeColor = lineColor;
     }
 
     private void ApplyCandlePlotSettings(ForexPanel.App.Settings.CandleSettings candleSettings)
