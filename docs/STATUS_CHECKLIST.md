@@ -168,6 +168,11 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 ## How to use this file
 1. Run the app: dotnet run --project .\ForexPanel.App\ForexPanel.App.csproj
+33. Axes tab review (per PS's priority pick, 2026-09-14)
+    Status: BUILT (needs PS verification) - made 3 previously-disabled items genuinely real (commit 384035b): Decimal Places (price axis tick labels now use a real F-format formatter via ScottPlot's NumericAutomatic.LabelFormatter, 0-8 decimals clamped), Time Format (HH:MM/Date/Combined, via DateTimeAutomatic.LabelFormatter), Show Last Price (a dashed horizontal line + text label at the latest close, colored to match axis text, correctly recreated every Rebuild since Plot.Clear() invalidates the old plottable). STILL DISABLED (genuinely require a bigger architecture change, left honestly placeholder): Price Axis Position (Left) and Time Axis Position (Top) - the current renderer always docks price-right/time-bottom; Show Sessions (never implemented, no session-marking concept exists). PLEASE VERIFY: change Decimal Places and confirm the price axis labels update; try all 3 Time Format options; toggle Show Last Price and confirm a dashed line with the current close price appears/disappears, and updates correctly across timeframe/symbol changes.
+
+## How to use this file
+1. Run the app: dotnet run --project .\ForexPanel.App\ForexPanel.App.csproj
 2. Go through each numbered item, replace UNTESTED with OK / PARTIAL / BROKEN.
 3. Add a short note after the dash for anything PARTIAL or BROKEN (exact symptom).
 4. Commit the updated file so the record persists across sessions.
