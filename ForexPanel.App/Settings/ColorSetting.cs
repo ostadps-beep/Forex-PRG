@@ -14,6 +14,13 @@ public sealed class ColorSetting
 {
     public Color BaseColor { get; set; }
 
+    /// <summary>
+    /// True once the user has explicitly picked this color in the Settings UI. Colors that
+    /// are still false follow the active Light/Dark theme when it changes; customized ones
+    /// keep the user's choice instead of being silently overwritten by a theme switch.
+    /// </summary>
+    public bool IsCustomized { get; set; }
+
     private double shadePercent = 100;
     public double ShadePercent
     {
@@ -23,7 +30,7 @@ public sealed class ColorSetting
 
     public Color Effective => Adjust(BaseColor, ShadePercent);
 
-    public ColorSetting Clone() => new() { BaseColor = BaseColor, ShadePercent = ShadePercent };
+    public ColorSetting Clone() => new() { BaseColor = BaseColor, ShadePercent = ShadePercent, IsCustomized = IsCustomized };
 
     public static ColorSetting From(Color color, double shadePercent = 100) =>
         new() { BaseColor = color, ShadePercent = shadePercent };

@@ -759,38 +759,41 @@ public partial class MainWindow : Window
         var crosshairBrush = TryFindResource("Color.Chart.Crosshair") as System.Windows.Media.SolidColorBrush;
 
         if (backgroundBrush != null)
-        {
-            var backgroundColor = ScottPlot.Color.FromARGB(
-                backgroundBrush.Color.A << 24 |
-                backgroundBrush.Color.R << 16 |
-                backgroundBrush.Color.G << 8 |
-                backgroundBrush.Color.B);
             Chart.Background = backgroundBrush;
-            Chart.Plot.FigureBackground.Color = backgroundColor;
-            Chart.Plot.DataBackground.Color = backgroundColor;
-        }
 
-        if (gridBrush != null)
-        {
-            var gridColor = ScottPlot.Color.FromARGB(
-                gridBrush.Color.A << 24 |
-                gridBrush.Color.R << 16 |
-                gridBrush.Color.G << 8 |
-                gridBrush.Color.B);
-            Chart.Plot.Grid.MajorLineColor = gridColor;
-            Chart.Plot.Grid.MajorLineWidth = 1;
-        }
+        // Sync any color the user has NOT explicitly customized to the newly-active theme.
+        // Without this, ChartSettings' stored values (which default to dark-theme colors) would
+        // keep overwriting the theme on every settings push - which is exactly why the chart
+        // background stayed dark after switching to the light theme. Colors the user did pick
+        // themselves keep their choice and are deliberately left alone here.
+        SyncUncustomizedColor(chartSettings.GridAndBackground.BackgroundColor, backgroundBrush);
+        SyncUncustomizedColor(chartSettings.GridAndBackground.GridColor, gridBrush);
+        SyncUncustomizedColor(chartSettings.Axes.AxisColor, textBrush);
+        SyncUncustomizedColor(chartSettings.Candles.BullishColor, candleUpBrush);
+        SyncUncustomizedColor(chartSettings.Candles.BearishColor, candleDownBrush);
+        SyncUncustomizedColor(chartSettings.Candles.HollowUpColor, candleUpBrush);
+        SyncUncustomizedColor(chartSettings.Candles.HollowDownColor, candleDownBrush);
 
-        // Axis text, candle up/down, and crosshair colors are owned by ChartController so
-        // they get re-applied automatically on every Rebuild (timeframe/symbol change) too -
-        // previously these reset to hardcoded/default colors after every Rebuild.
+        // Crosshair has no ChartSettings entry of its own yet, so it stays purely theme-driven.
         chartController.ApplyTheme(
             axisText: (textBrush ?? System.Windows.Media.Brushes.White).Color,
             candleUp: (candleUpBrush ?? System.Windows.Media.Brushes.LimeGreen).Color,
             candleDown: (candleDownBrush ?? System.Windows.Media.Brushes.OrangeRed).Color,
             crosshairColor: (crosshairBrush ?? System.Windows.Media.Brushes.Gray).Color);
 
+        // Settings take precedence over the raw theme, so push them last.
+        chartController.ApplyChartSettings(chartSettings);
+
         Chart.Refresh();
+    }
+
+    private static void SyncUncustomizedColor(ForexPanel.App.Settings.ColorSetting setting, System.Windows.Media.SolidColorBrush? themeBrush)
+    {
+        if (setting.IsCustomized || themeBrush == null)
+            return;
+
+        setting.BaseColor = themeBrush.Color;
+        setting.ShadePercent = 100;
     }
 
     private void ApplyMaximizeBounds()

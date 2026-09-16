@@ -643,6 +643,7 @@ public sealed partial class ChartSettingsWindow : Window
         {
             hueBase.Fill = new SolidColorBrush(HsvToRgb(hue, 1, 1));
             setting.BaseColor = HsvToRgb(hue, sat, val);
+            setting.IsCustomized = true;
             hexBox.Text = ColorToHex(setting.BaseColor);
             swatch.Background = new SolidColorBrush(setting.Effective);
             UpdateThumbPositions();
@@ -653,6 +654,7 @@ public sealed partial class ChartSettingsWindow : Window
         {
             (hue, sat, val) = RgbToHsv(color);
             setting.BaseColor = color;
+            setting.IsCustomized = true;
             hueBase.Fill = new SolidColorBrush(HsvToRgb(hue, 1, 1));
             hexBox.Text = ColorToHex(setting.BaseColor);
             swatch.Background = new SolidColorBrush(setting.Effective);
@@ -692,7 +694,10 @@ public sealed partial class ChartSettingsWindow : Window
             Color.FromRgb(0x8A, 0x8F, 0x99), Color.FromRgb(0xC4, 0xB0, 0x6E), Color.FromRgb(0xE0, 0xE0, 0xE0),
             Color.FromRgb(0x30, 0x30, 0x30),
             // Primary/vivid colors, per PS's request
-            Colors.Red, Colors.Green, Colors.Blue, Colors.Yellow, Colors.Black, Colors.White
+            Colors.Red, Colors.OrangeRed, Colors.Orange, Colors.Gold, Colors.Yellow,
+            Colors.Lime, Colors.Green, Colors.Teal, Colors.Cyan, Colors.DeepSkyBlue,
+            Colors.Blue, Colors.Navy, Colors.Purple, Colors.Magenta, Colors.DeepPink,
+            Colors.Brown, Colors.Maroon, Colors.Black, Colors.Gray, Colors.White
         };
         var presetsPanel = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         foreach (var preset in presets)
@@ -723,6 +728,7 @@ public sealed partial class ChartSettingsWindow : Window
         shadeSlider.ValueChanged += (_, e) =>
         {
             setting.ShadePercent = e.NewValue;
+            setting.IsCustomized = true;
             shadeLabel.Text = $"Shade: {e.NewValue:0}%";
             swatch.Background = new SolidColorBrush(setting.Effective);
             onChanged();
