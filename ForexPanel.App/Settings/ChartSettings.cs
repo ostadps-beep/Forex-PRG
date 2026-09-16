@@ -40,6 +40,7 @@ public sealed class ChartGeneralSettings
     public MouseWheelOption MouseWheelBehavior { get; set; } = MouseWheelOption.Pan; // MT4-standard default - do not silently change
     public ColorSetting LineColor { get; set; } = ColorSetting.From(Color.FromRgb(0x21, 0x96, 0xF3));
     public ColorSetting AreaColor { get; set; } = ColorSetting.From(Color.FromArgb(60, 0x21, 0x96, 0xF3)); // common pale/translucent blue
+    public double LineThickness { get; set; } = 1.5;
     public bool ChartShiftEnabled { get; set; }
     public bool AutoScrollEnabled { get; set; }
 

@@ -239,9 +239,15 @@ public sealed partial class ChartSettingsWindow : Window
             enabledValues: new[] { MouseWheelOption.Pan },
             disabledTooltip: "Zoom-on-wheel would conflict with this project's verified MT4-standard input (wheel=pan, +/-=zoom). Left as a placeholder for now.")));
 
-        root.Children.Add(SectionHeader("Line / Area Chart Type Colors"));
-        root.Children.Add(Row("Line Color", ColorPickerFor(s.LineColor, NotifyChanged)));
-        root.Children.Add(Row("Area Color", ColorPickerFor(s.AreaColor, NotifyChanged)));
+        root.Children.Add(SectionHeader("Grid"));
+        root.Children.Add(Row("Grid Color", ColorPickerFor(live.GridAndBackground.GridColor, NotifyChanged)));
+        root.Children.Add(Row("Grid Line Style", ComboBoxFor(
+            new[] { LineStyleOption.Solid, LineStyleOption.Dash, LineStyleOption.Dot },
+            live.GridAndBackground.LineStyle,
+            v => v.ToString(),
+            v => { live.GridAndBackground.LineStyle = v; NotifyChanged(); })));
+        root.Children.Add(Row("Show Horizontal Grid", CheckBoxFor(live.Axes.ShowHorizontalGrid, v => { live.Axes.ShowHorizontalGrid = v; NotifyChanged(); })));
+        root.Children.Add(Row("Show Vertical Grid", CheckBoxFor(live.Axes.ShowVerticalGrid, v => { live.Axes.ShowVerticalGrid = v; NotifyChanged(); })));
 
         return root;
     }
@@ -293,7 +299,6 @@ public sealed partial class ChartSettingsWindow : Window
             disabledTooltip: "The current chart renderer always docks the price axis on the right.")));
         panel.Children.Add(Row("Show Last Price", CheckBoxFor(s.ShowLastPrice, v => { s.ShowLastPrice = v; NotifyChanged(); }, isEnabled: false,
             tooltip: "Reserved - no last-price marker exists on the axis yet.")));
-        panel.Children.Add(Row("Show Horizontal Grid", CheckBoxFor(s.ShowHorizontalGrid, v => { s.ShowHorizontalGrid = v; NotifyChanged(); })));
         panel.Children.Add(Row("Decimal Places", NumericBox(s.DecimalPlaces, v => { s.DecimalPlaces = (int)v; NotifyChanged(); }, isEnabled: false,
             tooltip: "Reserved - price labels use ScottPlot's automatic formatting for now.")));
         panel.Children.Add(Row("Axis Color", ColorPickerFor(s.AxisColor, NotifyChanged)));
@@ -307,7 +312,6 @@ public sealed partial class ChartSettingsWindow : Window
             v => { s.TimePosition = v; NotifyChanged(); },
             enabledValues: new[] { TimeAxisPositionOption.Bottom },
             disabledTooltip: "The current chart renderer always docks the time axis on the bottom.")));
-        panel.Children.Add(Row("Show Vertical Grid", CheckBoxFor(s.ShowVerticalGrid, v => { s.ShowVerticalGrid = v; NotifyChanged(); })));
         panel.Children.Add(Row("Time Format", ComboBoxFor(
             new[] { TimeFormatOption.HhMm, TimeFormatOption.Date, TimeFormatOption.Combined },
             s.TimeFormat,
@@ -356,6 +360,16 @@ public sealed partial class ChartSettingsWindow : Window
         panel.Children.Add(Row("Bar Up Color", ColorPickerFor(s.BarUpColor, NotifyChanged)));
         panel.Children.Add(Row("Bar Down Color", ColorPickerFor(s.BarDownColor, NotifyChanged)));
 
+        panel.Children.Add(SectionHeader("Line Chart (used when Chart Type = Line)"));
+        panel.Children.Add(Row("Line Color", ColorPickerFor(general.LineColor, NotifyChanged)));
+        panel.Children.Add(Row("Line Thickness", SliderFor(0.5, 4.0, general.LineThickness, v => { general.LineThickness = v; NotifyChanged(); })));
+
+        panel.Children.Add(SectionHeader("Area Chart (used when Chart Type = Area)"));
+        panel.Children.Add(Row("Area Color", ColorPickerFor(general.AreaColor, NotifyChanged)));
+
+        panel.Children.Add(SectionHeader("Chart Background"));
+        panel.Children.Add(Row("Background Color", ColorPickerFor(live.GridAndBackground.BackgroundColor, NotifyChanged)));
+
         return panel;
     }
 
@@ -363,19 +377,14 @@ public sealed partial class ChartSettingsWindow : Window
     private UIElement BuildGridPanel()
     {
         var panel = new StackPanel();
-        var s = live.GridAndBackground;
 
-        panel.Children.Add(SectionHeader("Background"));
-        panel.Children.Add(Row("Background Color", ColorPickerFor(s.BackgroundColor, NotifyChanged)));
-
-        panel.Children.Add(SectionHeader("Grid"));
-        panel.Children.Add(Row("Show Grid", CheckBoxFor(s.ShowGrid, v => { s.ShowGrid = v; NotifyChanged(); })));
-        panel.Children.Add(Row("Grid Color", ColorPickerFor(s.GridColor, NotifyChanged)));
-        panel.Children.Add(Row("Line Style", ComboBoxFor(
-            new[] { LineStyleOption.Solid, LineStyleOption.Dash, LineStyleOption.Dot },
-            s.LineStyle,
-            v => v.ToString(),
-            v => { s.LineStyle = v; NotifyChanged(); })));
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Grid settings now live in the Chart tab (grouped with \"Show grid\"), and the chart background color lives in the Candles tab - per the reorganization so each setting sits with the controls it belongs to.",
+            Opacity = 0.6,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 16, 0, 0)
+        });
 
         return panel;
     }

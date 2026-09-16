@@ -276,6 +276,7 @@ public sealed class ChartController
         if (priceSeriesPlottable is ScottPlot.Plottables.Scatter scatter)
         {
             scatter.Color = ToScottPlotColor(generalSettings.LineColor.Effective);
+            scatter.LineWidth = (float)generalSettings.LineThickness;
         }
         else if (priceSeriesPlottable is ScottPlot.Plottables.FillY fill)
         {
@@ -307,6 +308,7 @@ public sealed class ChartController
         CreateCrosshair();
         ApplyChartSettingsToChart();
         chart.Plot.Axes.AutoScale();
+        ScalePriceAxisToCandles();
 
         var initialLimits = chart.Plot.Axes.GetLimits(
             chart.Plot.Axes.Bottom,
@@ -316,6 +318,28 @@ public sealed class ChartController
             (initialLimits.Top - initialLimits.Bottom) / 2.0;
 
         chart.Refresh();
+    }
+
+    /// <summary>
+    /// Sets the price axis from the candles' own high/low range. Needed because the Area chart
+    /// type deliberately extends its fill baseline well below the data (so the fill always
+    /// reaches the bottom edge of the chart instead of floating above it) - letting ScottPlot's
+    /// plain AutoScale run would include that artificial baseline in the visible range and push
+    /// the whole series upward, which is the bug PS saw after switching timeframe.
+    /// </summary>
+    private void ScalePriceAxisToCandles()
+    {
+        if (candles.Count == 0)
+            return;
+
+        double min = candles.Min(c => c.Low);
+        double max = candles.Max(c => c.High);
+        double pad = (max - min) * 0.05;
+
+        if (pad <= 0)
+            pad = Math.Abs(max) * 0.001 + 0.0001;
+
+        chart.Plot.Axes.SetLimitsY(min - pad, max + pad, chart.Plot.Axes.Right);
     }
 
     /// <summary>
@@ -424,7 +448,15 @@ public sealed class ChartController
     {
         double[] xs = candles.Select(c => c.Time.ToOADate()).ToArray();
         double[] ys = candles.Select(c => c.Close).ToArray();
-        double baseline = candles.Count > 0 ? candles.Min(c => c.Low) : 0.0;
+
+        // Push the fill's baseline well below the visible price range so the area always
+        // reaches the bottom edge of the chart rather than floating above it (the price axis
+        // is scaled from the candles themselves in ScalePriceAxisToCandles, so this extra
+        // headroom never affects the visible range).
+        double min = candles.Count > 0 ? candles.Min(c => c.Low) : 0.0;
+        double max = candles.Count > 0 ? candles.Max(c => c.High) : 1.0;
+        double baseline = min - (max - min) - 1.0;
+
         double[] baselineArray = Enumerable.Repeat(baseline, ys.Length).ToArray();
         var fill = chart.Plot.Add.FillY(xs, ys, baselineArray);
         fill.Axes.YAxis = chart.Plot.Axes.Right;
