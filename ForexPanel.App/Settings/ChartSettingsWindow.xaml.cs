@@ -324,6 +324,21 @@ public sealed partial class ChartSettingsWindow : Window
     {
         var panel = new StackPanel();
         var s = live.Candles;
+        var general = live.General;
+
+        panel.Children.Add(Row("Chart Type", ComboBoxFor(
+            new[] { ChartTypeOption.Bar, ChartTypeOption.Candlestick, ChartTypeOption.HollowCandlestick, ChartTypeOption.Line, ChartTypeOption.Area },
+            general.ChartType,
+            v => v switch
+            {
+                ChartTypeOption.Bar => "Bar chart",
+                ChartTypeOption.Candlestick => "Candlesticks",
+                ChartTypeOption.HollowCandlestick => "Hollow candlesticks",
+                ChartTypeOption.Line => "Line chart",
+                ChartTypeOption.Area => "Area chart",
+                _ => v.ToString()
+            },
+            v => { general.ChartType = v; NotifyChanged(); })));
 
         panel.Children.Add(Row("Bullish Color", ColorPickerFor(s.BullishColor, NotifyChanged)));
         panel.Children.Add(Row("Bearish Color", ColorPickerFor(s.BearishColor, NotifyChanged)));
@@ -671,10 +686,13 @@ public sealed partial class ChartSettingsWindow : Window
         // Muted, professional preset swatches - a reasonable soft palette rather than raw primaries.
         Color[] presets =
         {
+            // Muted/professional tones
             Color.FromRgb(0x6B, 0x8E, 0xA8), Color.FromRgb(0x7A, 0xA8, 0x8C), Color.FromRgb(0xC4, 0x8A, 0x6E),
             Color.FromRgb(0xB5, 0x7A, 0x8C), Color.FromRgb(0x9A, 0x8A, 0xC4), Color.FromRgb(0x6E, 0xA8, 0xA8),
             Color.FromRgb(0x8A, 0x8F, 0x99), Color.FromRgb(0xC4, 0xB0, 0x6E), Color.FromRgb(0xE0, 0xE0, 0xE0),
-            Color.FromRgb(0x30, 0x30, 0x30)
+            Color.FromRgb(0x30, 0x30, 0x30),
+            // Primary/vivid colors, per PS's request
+            Colors.Red, Colors.Green, Colors.Blue, Colors.Yellow, Colors.Black, Colors.White
         };
         var presetsPanel = new WrapPanel { Margin = new Thickness(0, 8, 0, 0) };
         foreach (var preset in presets)
