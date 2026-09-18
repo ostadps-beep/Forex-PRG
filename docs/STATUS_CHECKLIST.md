@@ -71,7 +71,7 @@ note after the colon describing the exact symptom if it's PARTIAL or BROKEN.
 
 15. Drawing tools (Horizontal Line, Vertical Line, Trend Line, Ray, Rectangle)
     Baseline claim: registered in toolbar, not fully wired
-    Status: UNTESTED -
+    Status: PARTIAL - BUILT for 3 of 5 (needs PS verification, commit f29b4d1, 2026-09-14). Horizontal Line, Vertical Line, and Trend Line are now real: click the toolbar icon to arm it (radio-group style - only one active, click again to cancel), click the chart to place (Trend Line needs a second click for the end point), styled live from Chart Settings > Drawing Tools (color/thickness/line style - all three now genuinely wired, previously only color was and line style was disabled). Delete removes the most recently placed drawing. Ray and Rectangle are still unwired (Ray needs one-sided-infinite-line logic; Rectangle needs a filled/outlined box between two points - neither built yet). KNOWN PHASE-1 LIMITATION: placed drawings do not persist across timeframe/symbol changes yet - they're cleared along with the rest of the chart on Rebuild, matching the "simple draw only" phase used for the sibling project before its own per-object editing pass. PLEASE VERIFY: place a horizontal line, a vertical line, and a trend line (2 clicks); change their color/thickness/style in Settings and place new ones to confirm the style applies; use Delete to remove the last one; confirm clicking Cursor or the same tool again cancels an armed tool.
 
 16. Indicators
     Baseline claim: registered in toolbar, not fully wired
