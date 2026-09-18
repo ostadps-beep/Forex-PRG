@@ -539,6 +539,7 @@ public partial class MainWindow : Window
             case DrawingToolMode.HorizontalLine:
             {
                 var line = Chart.Plot.Add.HorizontalLine(coords.Y, width, color, pattern);
+                line.Axes.YAxis = Chart.Plot.Axes.Right;
                 placedDrawings.Add(line);
                 activeDrawingTool = DrawingToolMode.None;
                 RefreshDrawingToolHighlight();
@@ -547,6 +548,7 @@ public partial class MainWindow : Window
             case DrawingToolMode.VerticalLine:
             {
                 var line = Chart.Plot.Add.VerticalLine(coords.X, width, color, pattern);
+                line.Axes.YAxis = Chart.Plot.Axes.Right;
                 placedDrawings.Add(line);
                 activeDrawingTool = DrawingToolMode.None;
                 RefreshDrawingToolHighlight();
@@ -561,6 +563,7 @@ public partial class MainWindow : Window
                 }
 
                 var trend = Chart.Plot.Add.Line(pendingTrendStart.Value.X, pendingTrendStart.Value.Y, coords.X, coords.Y);
+                trend.Axes.YAxis = Chart.Plot.Axes.Right;
                 trend.LineWidth = width;
                 trend.Color = color;
                 trend.LinePattern = pattern;
