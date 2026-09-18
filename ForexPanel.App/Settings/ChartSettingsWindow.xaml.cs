@@ -399,7 +399,7 @@ public sealed partial class ChartSettingsWindow : Window
 
         panel.Children.Add(new TextBlock
         {
-            Text = "Shared default style for all drawing tools (per-tool styling is planned for a later \"Drawing Tools phase 2\" pass).",
+            Text = "Shared default style for Horizontal Line, Vertical Line, and Trend Line - the only drawing tools actually implemented so far (per-tool individual styling and other tools like Fibonacci/Rectangle/ParallelChannel are a later pass).",
             Opacity = 0.6,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 12)
@@ -410,9 +410,7 @@ public sealed partial class ChartSettingsWindow : Window
             new[] { LineStyleOption.Solid, LineStyleOption.Dash, LineStyleOption.Dot },
             s.LineStyle,
             v => v.ToString(),
-            v => { s.LineStyle = v; NotifyChanged(); },
-            enabledValues: new[] { LineStyleOption.Solid },
-            disabledTooltip: "Reserved - drawing tools currently always render as solid lines.")));
+            v => { s.LineStyle = v; NotifyChanged(); })));
 
         return panel;
     }

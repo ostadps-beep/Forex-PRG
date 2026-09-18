@@ -16,6 +16,8 @@ using ForexPanel.Core;
 
 namespace ForexPanel.App;
 
+internal enum DrawingToolMode { None, HorizontalLine, VerticalLine, TrendLine }
+
 public partial class MainWindow : Window
 {
     private const double InitialBarSpacing = 10.0;
@@ -31,6 +33,9 @@ public partial class MainWindow : Window
     private bool candleLayoutInitialized;
 
     private bool zoomAreaMode;
+    private DrawingToolMode activeDrawingTool = DrawingToolMode.None;
+    private ScottPlot.Coordinates? pendingTrendStart;
+    private readonly List<ScottPlot.IPlottable> placedDrawings = new();
     private bool zoomAreaDragging;
     private ScottPlot.Pixel zoomAreaStartPixel;
 
@@ -66,6 +71,9 @@ public partial class MainWindow : Window
             CancelZoomAreaMode();
             currentSymbol = symbol;
             chartController.Rebuild(currentSymbol, candleMinutes);
+            placedDrawings.Clear();
+            activeDrawingTool = DrawingToolMode.None;
+            pendingTrendStart = null;
             ApplyInitialCandleViewport();
             ApplyCrosshairVisibility();
         };
@@ -78,6 +86,9 @@ public partial class MainWindow : Window
                 "H1" => 60, "H4" => 240, "D1" => 1440, _ => candleMinutes
             };
             chartController.Rebuild(currentSymbol, candleMinutes);
+            placedDrawings.Clear();
+            activeDrawingTool = DrawingToolMode.None;
+            pendingTrendStart = null;
             ApplyInitialCandleViewport();
             ApplyCrosshairVisibility();
         };
@@ -279,15 +290,52 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (tool.Id is "HorizontalLine" or "VerticalLine" or "TrendLine")
+        {
+            var requestedMode = tool.Id switch
+            {
+                "HorizontalLine" => DrawingToolMode.HorizontalLine,
+                "VerticalLine" => DrawingToolMode.VerticalLine,
+                _ => DrawingToolMode.TrendLine
+            };
+
+            CancelZoomAreaMode();
+            pendingTrendStart = null;
+
+            // Clicking the already-active tool cancels it (toggle), matching MT4 convention.
+            activeDrawingTool = activeDrawingTool == requestedMode ? DrawingToolMode.None : requestedMode;
+            RefreshDrawingToolHighlight();
+            return;
+        }
+
+        if (string.Equals(tool.Id, "Delete", StringComparison.Ordinal))
+        {
+            if (placedDrawings.Count > 0)
+            {
+                var last = placedDrawings[^1];
+                placedDrawings.RemoveAt(placedDrawings.Count - 1);
+                Chart.Plot.PlottableList.Remove(last);
+                Chart.Refresh();
+            }
+            return;
+        }
+
         if (string.Equals(tool.Id, "Cursor", StringComparison.Ordinal))
         {
-            // Cursor = standard/neutral pointer mode. If another exclusive mode (Crosshair)
-            // is currently active, selecting Cursor turns it back off.
+            // Cursor = standard/neutral pointer mode. If another exclusive mode (Crosshair,
+            // an active drawing tool) is currently active, selecting Cursor turns it back off.
             if (crosshairEnabled)
             {
                 crosshairEnabled = false;
                 RefreshToggleToolbarButtonBackgrounds();
                 ApplyCrosshairVisibility();
+            }
+
+            if (activeDrawingTool != DrawingToolMode.None)
+            {
+                activeDrawingTool = DrawingToolMode.None;
+                pendingTrendStart = null;
+                RefreshDrawingToolHighlight();
             }
             return;
         }
@@ -400,6 +448,13 @@ public partial class MainWindow : Window
 
     private void Chart_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (activeDrawingTool != DrawingToolMode.None)
+        {
+            PlaceDrawingAtCursor(e.GetPosition(Chart));
+            e.Handled = true;
+            return;
+        }
+
         if (!zoomAreaMode)
             return;
 
@@ -458,6 +513,70 @@ public partial class MainWindow : Window
 
         e.Handled = true;
     }
+
+    /// <summary>
+    /// Places the currently-active drawing tool at the clicked chart position. Horizontal and
+    /// Vertical lines place immediately on one click; Trend Line needs two clicks (start, then
+    /// end) - matching MT4's own "phase 1, simple draw only" convention (no dragging/editing of
+    /// already-placed objects yet, per the same phased approach used for the sibling project).
+    /// </summary>
+    private void PlaceDrawingAtCursor(Point wpfPoint)
+    {
+        var pixel = ToScottPlotPixel(wpfPoint);
+        var coords = Chart.Plot.GetCoordinates(pixel, Chart.Plot.Axes.Bottom, Chart.Plot.Axes.Right);
+        var style = chartSettings.DrawingTools;
+        var color = ToScottPlotColorForDrawing(style.DefaultColor.Effective);
+        float width = (float)style.Thickness;
+        var pattern = style.LineStyle switch
+        {
+            ForexPanel.App.Settings.LineStyleOption.Dash => ScottPlot.LinePattern.Dashed,
+            ForexPanel.App.Settings.LineStyleOption.Dot => ScottPlot.LinePattern.Dotted,
+            _ => ScottPlot.LinePattern.Solid
+        };
+
+        switch (activeDrawingTool)
+        {
+            case DrawingToolMode.HorizontalLine:
+            {
+                var line = Chart.Plot.Add.HorizontalLine(coords.Y, width, color, pattern);
+                placedDrawings.Add(line);
+                activeDrawingTool = DrawingToolMode.None;
+                RefreshDrawingToolHighlight();
+                break;
+            }
+            case DrawingToolMode.VerticalLine:
+            {
+                var line = Chart.Plot.Add.VerticalLine(coords.X, width, color, pattern);
+                placedDrawings.Add(line);
+                activeDrawingTool = DrawingToolMode.None;
+                RefreshDrawingToolHighlight();
+                break;
+            }
+            case DrawingToolMode.TrendLine:
+            {
+                if (pendingTrendStart == null)
+                {
+                    pendingTrendStart = coords;
+                    return; // wait for the second click - stay in TrendLine mode
+                }
+
+                var trend = Chart.Plot.Add.Line(pendingTrendStart.Value.X, pendingTrendStart.Value.Y, coords.X, coords.Y);
+                trend.LineWidth = width;
+                trend.Color = color;
+                trend.LinePattern = pattern;
+                placedDrawings.Add(trend);
+                pendingTrendStart = null;
+                activeDrawingTool = DrawingToolMode.None;
+                RefreshDrawingToolHighlight();
+                break;
+            }
+        }
+
+        Chart.Refresh();
+    }
+
+    private static ScottPlot.Color ToScottPlotColorForDrawing(System.Windows.Media.Color c) =>
+        ScottPlot.Color.FromARGB((uint)((c.A << 24) | (c.R << 16) | (c.G << 8) | c.B));
 
     private ScottPlot.Pixel ToScottPlotPixel(Point point)
     {
@@ -609,6 +728,22 @@ public partial class MainWindow : Window
         ApplyToggleButtonVisual("AutoScroll", chartSettings.General.AutoScrollEnabled, activeBackground, activeBorder);
         ApplyToggleButtonVisual("ChartShift", chartSettings.General.ChartShiftEnabled, activeBackground, activeBorder);
         RefreshChartTypeToolbarHighlight(activeBackground, activeBorder);
+        RefreshDrawingToolHighlight(activeBackground, activeBorder);
+    }
+
+    /// <summary>
+    /// Highlights whichever drawing-tool button (if any) is currently active, matching the
+    /// same pattern used for chart-type buttons - a manually-managed radio group since the
+    /// toolbar model itself has no built-in mutual exclusivity.
+    /// </summary>
+    private void RefreshDrawingToolHighlight(Brush? activeBackground = null, Brush? activeBorder = null)
+    {
+        activeBackground ??= TryFindResource("Color.Toolbar.ButtonPressed") as Brush;
+        activeBorder ??= TryFindResource("Color.Toolbar.ButtonPressedBorder") as Brush;
+
+        ApplyToggleButtonVisual("HorizontalLine", activeDrawingTool == DrawingToolMode.HorizontalLine, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("VerticalLine", activeDrawingTool == DrawingToolMode.VerticalLine, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("TrendLine", activeDrawingTool == DrawingToolMode.TrendLine, activeBackground, activeBorder);
     }
 
     /// <summary>
