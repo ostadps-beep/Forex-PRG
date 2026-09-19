@@ -16,7 +16,7 @@ using ForexPanel.Core;
 
 namespace ForexPanel.App;
 
-internal enum DrawingToolMode { None, HorizontalLine, VerticalLine, TrendLine }
+internal enum DrawingToolMode { None, HorizontalLine, VerticalLine, TrendLine, Ray, Rectangle }
 
 public partial class MainWindow : Window
 {
@@ -290,13 +290,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (tool.Id is "HorizontalLine" or "VerticalLine" or "TrendLine")
+        if (tool.Id is "HorizontalLine" or "VerticalLine" or "TrendLine" or "Ray" or "Rectangle")
         {
             var requestedMode = tool.Id switch
             {
                 "HorizontalLine" => DrawingToolMode.HorizontalLine,
                 "VerticalLine" => DrawingToolMode.VerticalLine,
-                _ => DrawingToolMode.TrendLine
+                "TrendLine" => DrawingToolMode.TrendLine,
+                "Ray" => DrawingToolMode.Ray,
+                _ => DrawingToolMode.Rectangle
             };
 
             CancelZoomAreaMode();
@@ -573,6 +575,59 @@ public partial class MainWindow : Window
                 RefreshDrawingToolHighlight();
                 break;
             }
+            case DrawingToolMode.Ray:
+            {
+                if (pendingTrendStart == null)
+                {
+                    pendingTrendStart = coords;
+                    return; // wait for the second click to set the ray's direction
+                }
+
+                var start = pendingTrendStart.Value;
+                double dx = coords.X - start.X;
+                double dy = coords.Y - start.Y;
+
+                // ScottPlot has no dedicated "ray" (one-sided infinite line) plottable, so this
+                // approximates it: extend far past the second click in the same direction, well
+                // beyond any realistic zoom level, using a two-point line.
+                const double ExtendFactor = 1000;
+                double farX = coords.X + dx * ExtendFactor;
+                double farY = coords.Y + dy * ExtendFactor;
+
+                var ray = Chart.Plot.Add.Line(start.X, start.Y, farX, farY);
+                ray.Axes.YAxis = Chart.Plot.Axes.Right;
+                ray.LineWidth = width;
+                ray.Color = color;
+                ray.LinePattern = pattern;
+                placedDrawings.Add(ray);
+                pendingTrendStart = null;
+                activeDrawingTool = DrawingToolMode.None;
+                RefreshDrawingToolHighlight();
+                break;
+            }
+            case DrawingToolMode.Rectangle:
+            {
+                if (pendingTrendStart == null)
+                {
+                    pendingTrendStart = coords;
+                    return; // wait for the second click for the opposite corner
+                }
+
+                var corner1 = pendingTrendStart.Value;
+                var rect = Chart.Plot.Add.Rectangle(
+                    Math.Min(corner1.X, coords.X), Math.Max(corner1.X, coords.X),
+                    Math.Min(corner1.Y, coords.Y), Math.Max(corner1.Y, coords.Y));
+                rect.Axes.YAxis = Chart.Plot.Axes.Right;
+                rect.LineWidth = width;
+                rect.LineColor = color;
+                rect.LinePattern = pattern;
+                rect.FillColor = ScottPlot.Colors.Transparent; // outline-only, matching the "simple draw" phase
+                placedDrawings.Add(rect);
+                pendingTrendStart = null;
+                activeDrawingTool = DrawingToolMode.None;
+                RefreshDrawingToolHighlight();
+                break;
+            }
         }
 
         Chart.Refresh();
@@ -747,6 +802,8 @@ public partial class MainWindow : Window
         ApplyToggleButtonVisual("HorizontalLine", activeDrawingTool == DrawingToolMode.HorizontalLine, activeBackground, activeBorder);
         ApplyToggleButtonVisual("VerticalLine", activeDrawingTool == DrawingToolMode.VerticalLine, activeBackground, activeBorder);
         ApplyToggleButtonVisual("TrendLine", activeDrawingTool == DrawingToolMode.TrendLine, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("Ray", activeDrawingTool == DrawingToolMode.Ray, activeBackground, activeBorder);
+        ApplyToggleButtonVisual("Rectangle", activeDrawingTool == DrawingToolMode.Rectangle, activeBackground, activeBorder);
     }
 
     /// <summary>
